@@ -1,0 +1,20 @@
+{
+  "name": "alltools-backend",
+  "version": "1.0.0",
+  "description": "Backend untuk app AllTools: auth, kuota, download, dan AI chat",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "node-fetch": "^2.7.0"
+  }
+}
+
