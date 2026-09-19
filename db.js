@@ -1,12 +1,13 @@
 // Penyimpanan sederhana pakai file JSON di disk.
-// Cukup untuk mulai tanpa modal; nanti kalau user makin banyak,
-// tinggal ganti bagian ini dengan database asli (PostgreSQL/MongoDB)
-// tanpa mengubah banyak kode di server.js.
+// DATA_DIR bisa diisi lewat environment variable supaya datanya disimpan
+// di Volume Railway (permanen), bukan di filesystem sementara yang
+// ke-reset setiap kali server di-deploy ulang.
 
 const fs = require('fs');
 const path = require('path');
 
-const DB_FILE = path.join(__dirname, 'data.json');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const DB_FILE = path.join(DATA_DIR, 'data.json');
 
 function readDb() {
   if (!fs.existsSync(DB_FILE)) {
@@ -20,6 +21,7 @@ function readDb() {
 }
 
 function writeDb(data) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
@@ -72,4 +74,4 @@ module.exports = {
   readDb, writeDb, findUserByEmail, findUserById, saveUser,
   resetQuotaIfNewDay, addHistory, getHistoryForUser, todayStr,
 };
-
+    
