@@ -11,12 +11,15 @@ const DB_FILE = path.join(DATA_DIR, 'data.json');
 
 function readDb() {
   if (!fs.existsSync(DB_FILE)) {
-    return { users: [], history: [] };
+    return { users: [], history: [], sites: [], bots: [] };
   }
   try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    if (!data.sites) data.sites = [];
+    if (!data.bots) data.bots = [];
+    return data;
   } catch (e) {
-    return { users: [], history: [] };
+    return { users: [], history: [], sites: [], bots: [] };
   }
 }
 
@@ -70,8 +73,45 @@ function getHistoryForUser(userId, limit = 50) {
   return db.history.filter(h => h.userId === userId).slice(0, limit);
 }
 
+function findSiteBySlug(slug) {
+  const db = readDb();
+  return db.sites.find(s => s.slug === slug);
+}
+
+function saveSite(site) {
+  const db = readDb();
+  const idx = db.sites.findIndex(s => s.slug === site.slug);
+  if (idx === -1) db.sites.push(site);
+  else db.sites[idx] = site;
+  writeDb(db);
+}
+
+function getSitesForUser(userId) {
+  const db = readDb();
+  return db.sites.filter(s => s.userId === userId);
+}
+
+function findBotByApiKey(apiKey) {
+  const db = readDb();
+  return db.bots.find(b => b.apiKey === apiKey);
+}
+
+function saveBot(bot) {
+  const db = readDb();
+  const idx = db.bots.findIndex(b => b.id === bot.id);
+  if (idx === -1) db.bots.push(bot);
+  else db.bots[idx] = bot;
+  writeDb(db);
+}
+
+function getBotsForUser(userId) {
+  const db = readDb();
+  return db.bots.filter(b => b.userId === userId);
+}
+
 module.exports = {
   readDb, writeDb, findUserByEmail, findUserById, saveUser,
   resetQuotaIfNewDay, addHistory, getHistoryForUser, todayStr,
+  findSiteBySlug, saveSite, getSitesForUser,
+  findBotByApiKey, saveBot, getBotsForUser,
 };
-    
