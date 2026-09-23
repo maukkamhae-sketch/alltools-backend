@@ -335,7 +335,7 @@ app.post('/api/pulsa/create-transaction', requireAuth, async (req, res) => {
       basePrice: product.basePrice, fee: product.fee, operator: product.operator,
       phoneNumber: phone, status: 'pending', createdAt: new Date().toISOString(),
     });
-    res.json({ token: data.token, orderId });
+    res.json({ token: data.token, orderId, isProduction: MIDTRANS_IS_PRODUCTION });
   } catch (e) {
     res.status(502).json({ error: 'Gagal menghubungi Midtrans.' });
   }
