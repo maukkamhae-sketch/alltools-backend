@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>AllTools Admin</title>
+<style>
+:root{--bg:#F3F1FA;--card:#fff;--ink:#1B1830;--soft:#6A6585;--line:#E2DEF0;--accent:#5B3DF5;--accent-ink:#fff;--ok:#1E9E62;--danger:#D64545;--amber:#D98A00;}
+@media (prefers-color-scheme:dark){:root{--bg:#141225;--card:#1D1A35;--ink:#F1EFFB;--soft:#A6A1C4;--line:#2C2846;--accent:#8B7BFF;--accent-ink:#141225;}}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;padding:16px;max-width:560px;margin:0 auto;}
+h1{font-size:20px;margin:4px 0 14px;display:flex;justify-content:space-between;align-items:center;}
+h1 span b{color:var(--accent);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;}
+label{display:block;font-size:12px;color:var(--soft);margin:10px 0 4px;}
+input[type=text],input[type=number],input[type=password],input[type=email],select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);}
+.row{display:flex;gap:10px;}
+.row>div{flex:1;}
+button{font-family:inherit;font-size:14px;font-weight:600;border:none;border-radius:10px;padding:11px 14px;cursor:pointer;background:var(--accent);color:var(--accent-ink);}
+button.sec{background:transparent;color:var(--ink);border:1px solid var(--line);}
+button.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);}
+button.ok{background:var(--ok);color:#fff;}
+button:disabled{opacity:.5;}
+.full{width:100%;margin-top:14px;}
+.tabs{display:flex;gap:6px;overflow-x:auto;}
+.tabs button{flex:1;background:transparent;color:var(--soft);border:1px solid var(--line);white-space:nowrap;}
+.tabs button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+.msg{font-size:13px;margin-top:10px;display:none;padding:10px 12px;border-radius:10px;}
+.msg.err{display:block;background:rgba(214,69,69,.12);color:var(--danger);}
+.msg.good{display:block;background:rgba(30,158,98,.12);color:var(--ok);}
+.sell{font-size:13px;color:var(--soft);margin-top:8px;}
+.sell b{color:var(--ink);}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap;}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.small{font-size:12px;color:var(--soft);margin-top:4px;line-height:1.5;}
+.hide{display:none;}
+.chk{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;}
+.chk input{width:auto;}
+
+/* ---------- layar loading Owner (Sasuke + Rasengan) ---------- */
+#owner-splash{display:none;position:fixed;inset:0;z-index:100001;background:#05030d;color:#fff;overflow:hidden;transition:opacity .6s ease;animation:osAutoHide .6s ease 9s forwards;}
+html.owner-splash-on #owner-splash{display:block;}
+#owner-splash.out{opacity:0;pointer-events:none;}
+#owner-splash .os-bg{position:absolute;inset:-4%;background:url(/loading.webp) 47% 30%/cover no-repeat;animation:osKb 9s ease-out forwards;will-change:transform;}
+#owner-splash .os-glow{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;background:radial-gradient(70% 45% at 0% 30%,rgba(120,90,255,.55),transparent 70%);animation:osPulseA 2.4s ease-in-out infinite;}
+#owner-splash .os-glow.r{background:radial-gradient(70% 45% at 100% 32%,rgba(255,50,70,.5),transparent 70%);animation-name:osPulseB;}
+#owner-splash .os-shade{position:absolute;inset:0;background:linear-gradient(to top,#05030d 6%,rgba(5,3,13,.88) 22%,rgba(5,3,13,0) 52%),linear-gradient(to bottom,rgba(5,3,13,.55),transparent 22%);}
+#owner-splash canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#owner-splash .os-ui{position:absolute;left:0;right:0;bottom:0;padding:0 28px calc(34px + env(safe-area-inset-bottom));}
+#owner-splash .os-wrap{max-width:420px;margin:0 auto;}
+#owner-splash .os-hello{font-size:12px;opacity:.8;letter-spacing:.04em;margin-bottom:8px;text-align:center;}
+#owner-splash .os-row{display:flex;justify-content:space-between;align-items:baseline;}
+#owner-splash .os-title{font-size:22px;font-weight:800;font-style:italic;letter-spacing:.06em;text-shadow:0 0 14px #8b6bff,0 0 30px #5b3df5;}
+#owner-splash .os-pct{font-size:13px;font-weight:700;opacity:.9;}
+#owner-splash .os-bar{height:12px;border-radius:999px;margin-top:10px;background:rgba(255,255,255,.12);border:1px solid rgba(160,140,255,.5);box-shadow:0 0 14px rgba(120,90,255,.5);overflow:hidden;}
+#owner-splash .os-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#6c4bff,#c9b8ff,#fff);box-shadow:0 0 12px #9b85ff;}
+#owner-splash .os-quote{margin-top:14px;font-size:13px;opacity:.88;line-height:1.5;text-align:center;}
+#owner-splash .os-quote i{display:block;opacity:.7;font-size:12px;margin-top:2px;}
+/* Rasengan */
+.rasengan{position:absolute;left:50%;bottom:calc(210px + env(safe-area-inset-bottom));width:130px;height:130px;margin-left:-65px;transform:scale(var(--k,.6));transition:transform .2s linear;filter:drop-shadow(0 0 18px #3fb0ff) drop-shadow(0 0 42px rgba(40,120,255,.75));pointer-events:none;}
+.rasengan i{position:absolute;display:block;border-radius:50%;}
+.rasengan .rs-core{inset:0;background:radial-gradient(circle,#fff 0 10%,#cfeeff 24%,#5cbcff 50%,rgba(30,110,255,.6) 70%,rgba(20,90,255,0) 100%);animation:rsPulse .9s ease-in-out infinite;}
+.rasengan .rs-sw{background:conic-gradient(rgba(255,255,255,0),rgba(255,255,255,.9) 9%,rgba(255,255,255,0) 20%,rgba(150,220,255,.85) 38%,rgba(255,255,255,0) 52%,rgba(255,255,255,.9) 70%,rgba(255,255,255,0) 88%);-webkit-mask:radial-gradient(circle,transparent 0 20%,#000 34%);mask:radial-gradient(circle,transparent 0 20%,#000 34%);mix-blend-mode:screen;}
+.rasengan .a{inset:4%;animation:rsSpin .7s linear infinite;}
+.rasengan .b{inset:18%;animation:rsSpin .45s linear infinite reverse;}
+.rasengan .c{inset:-8%;opacity:.55;animation:rsSpin 1.4s linear infinite;}
+.rasengan.burst{animation:rsBurst .5s ease-out forwards;}
+@keyframes rsSpin{to{transform:rotate(360deg);}}
+@keyframes rsPulse{50%{transform:scale(1.1);filter:brightness(1.3);}}
+@keyframes rsBurst{from{opacity:1;}to{transform:scale(5.5);opacity:0;}}
+@keyframes osKb{from{transform:scale(1.05);}to{transform:scale(1.22) translate3d(-1.5%,-1%,0);}}
+@keyframes osPulseA{0%,100%{opacity:.25;}50%{opacity:.9;}}
+@keyframes osPulseB{0%,100%{opacity:.9;}50%{opacity:.25;}}
+@keyframes osAutoHide{to{opacity:0;visibility:hidden;pointer-events:none;}}
+@media (prefers-reduced-motion:reduce){#owner-splash .os-bg,#owner-splash .os-glow,.rasengan i{animation:none!important;}}
+</style>
+</head>
+<body>
+<div id="owner-splash" role="status" aria-live="polite">
+  <div class="os-bg"></div>
+  <div class="os-glow"></div><div class="os-glow r"></div>
+  <div class="os-shade"></div>
+  <canvas id="os-cv"></canvas>
+  <div class="rasengan" id="os-ras"><i class="rs-core"></i><i class="rs-sw a"></i><i class="rs-sw b"></i><i class="rs-sw c"></i></div>
+  <div class="os-ui"><div class="os-wrap">
+    <div class="os-hello" id="os-hello">👑 Selamat datang, Owner</div>
+    <div class="os-row"><span class="os-title">LOADING...</span><span class="os-pct" id="os-pct">0%</span></div>
+    <div class="os-bar"><div class="os-fill" id="os-fill"></div></div>
+    <div class="os-quote">Jangan menyerah, bahkan jika dunia menentangmu.<i>- Uchiha Sasuke -</i></div>
+  </div></div>
+</div>
+<script>document.documentElement.classList.add('owner-splash-on');</script>
+
+<h1><span>All<b>Tools</b> Admin</span><button class="sec hide" id="logout" onclick="logout()">Keluar</button></h1>
+
+<div id="login" class="card">
+  <b>Masuk sebagai Owner</b>
+  <label>Email</label><input type="email" id="l-email" autocomplete="username">
+  <label>Password</label><input type="password" id="l-pass" autocomplete="current-password">
+  <button class="full" onclick="doLogin()">Masuk</button>
+  <div class="msg" id="l-msg"></div>
+</div>
+
+<div id="app" class="hide">
+  <div class="tabs">
+    <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
+    <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
+    <button id="t-order" onclick="tab('order')">Pesanan</button>
+  </div>
+
+  <section id="s-produk">
+    <div id="plist"></div>
+    <button class="sec full" onclick="addProduct()">+ Tambah produk</button>
+    <button class="full" id="save-products" onclick="saveProducts()">Simpan produk</button>
+    <div class="msg" id="p-msg"></div>
+    <div class="small">Harga jual = harga pokok + fee. Fee adalah untungmu. Produk yang dimatikan (tidak aktif) disembunyikan dari app, pesanan lama tetap aman.</div>
+  </section>
+
+  <section id="s-harga" class="hide">
+    <div class="card">
+      <b>Harga Premium (per bulan)</b>
+      <div class="row">
+        <div><label>Basic (Rp)</label><input type="number" id="pr-basic" inputmode="numeric"></div>
+        <div><label>Pro (Rp)</label><input type="number" id="pr-pro" inputmode="numeric"></div>
+      </div>
+    </div>
+    <div class="card">
+      <b>Harga sewa bot WhatsApp</b>
+      <div class="row">
+        <div><label>Per minggu / 7 hari (Rp)</label><input type="number" id="bp-week" inputmode="numeric"></div>
+        <div><label>Per bulan / 30 hari (Rp)</label><input type="number" id="bp-month" inputmode="numeric"></div>
+      </div>
+      <label>Nomor WhatsApp bot pusat (format 628xxx)</label>
+      <input type="text" id="bot-number" inputmode="numeric">
+    </div>
+    <div class="card">
+      <b>Nomor DANA</b>
+      <label>Nomor yang ditampilkan ke pembeli</label>
+      <input type="text" id="dana" inputmode="numeric">
+      <div class="small">QRIS tidak diubah dari sini. Untuk mengganti gambarnya, ganti file <code>qris.jpg</code> di frontend.</div>
+    </div>
+    <button class="full" onclick="saveHarga()">Simpan</button>
+    <div class="msg" id="h-msg"></div>
+  </section>
+
+  <section id="s-order" class="hide">
+    <button class="sec full" onclick="loadOrders()">Muat ulang</button>
+    <div id="olist"></div>
+    <div class="msg" id="o-msg"></div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rp=n=>'Rp '+Number(n||0).toLocaleString('id-ID');
+const OPS=['all','telkomsel','indosat','xl','axis','tri','smartfren'];
+let token='';
+try{ token=localStorage.getItem('admin_token')||''; }catch(e){}
+let products=[];
+
+async function api(path,opts={}){
+  const headers={'Content-Type':'application/json'};
+  if(token) headers.Authorization='Bearer '+token;
+  const r=await fetch(path,Object.assign({},opts,{headers}));
+  let d={}; try{ d=await r.json(); }catch(e){}
+  if(!r.ok){ const err=new Error(d.error||('HTTP '+r.status)); err.status=r.status; throw err; }
+  return d;
+}
+function say(id,text,good){ const m=$(id); m.className='msg '+(good?'good':'err'); m.textContent=text; if(good) setTimeout(()=>{m.className='msg';},3000); }
+
+async function doLogin(){
+  const m=$('l-msg'); m.className='msg';
+  try{
+    const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:$('l-email').value.trim(),password:$('l-pass').value})});
+    if(!d.user||d.user.plan!=='owner') throw new Error('Akun ini bukan Owner.');
+    token=d.token; try{ localStorage.setItem('admin_token',token); }catch(e){}
+    $('l-pass').value='';
+    start();
+  }catch(e){ say('l-msg',e.message); }
+}
+function logout(){ token=''; try{ localStorage.removeItem('admin_token'); }catch(e){} location.reload(); }
+
+async function start(){
+  try{
+    const c=await api('/api/admin/config');
+    products=c.products;
+    $('pr-basic').value=c.planPrices.basic; $('pr-pro').value=c.planPrices.pro; $('bp-week').value=c.botPrices.week; $('bp-month').value=c.botPrices.month; $('bot-number').value=c.botNumber; $('dana').value=c.dana;
+    $('login').classList.add('hide'); $('app').classList.remove('hide'); $('logout').classList.remove('hide');
+    renderProducts();
+  }catch(e){
+    if(e.status===401||e.status===403){ token=''; try{ localStorage.removeItem('admin_token'); }catch(x){} }
+    $('login').classList.remove('hide'); $('app').classList.add('hide');
+    if(token===''&&e.status) say('l-msg','Masuk dulu ya.');
+  }
+}
+
+function tab(name){
+  for(const t of ['produk','harga','order']){
+    $('s-'+t).classList.toggle('hide',t!==name);
+    $('t-'+t).classList.toggle('on',t===name);
+  }
+  if(name==='order') loadOrders();
+}
+
+/* ---------- produk ---------- */
+function renderProducts(){
+  $('plist').innerHTML=products.map((p,i)=>`
+    <div class="card">
+      <div class="top"><b>${esc(p.label||'Produk baru')}</b><button class="danger" onclick="delProduct(${i})">Hapus</button></div>
+      <label>Nama produk</label><input type="text" value="${esc(p.label)}" oninput="setP(${i},'label',this.value)">
+      <label>Operator</label>
+      <select onchange="setP(${i},'operator',this.value)">${OPS.map(o=>`<option value="${o}" ${p.operator===o?'selected':''}>${o==='all'?'Semua operator':o}</option>`).join('')}</select>
+      <div class="row">
+        <div><label>Harga pokok (Rp)</label><input type="number" inputmode="numeric" value="${esc(p.basePrice)}" oninput="setP(${i},'basePrice',this.value)"></div>
+        <div><label>Fee / untung (Rp)</label><input type="number" inputmode="numeric" value="${esc(p.fee)}" oninput="setP(${i},'fee',this.value)"></div>
+      </div>
+      <div class="sell">Harga jual: <b id="sell-${i}">${rp((+p.basePrice||0)+(+p.fee||0))}</b></div>
+      <label class="chk"><input type="checkbox" ${p.active!==false?'checked':''} onchange="setP(${i},'active',this.checked)"> Aktif (tampil di app)</label>
+    </div>`).join('')||'<div class="small">Belum ada produk.</div>';
+}
+function setP(i,k,v){
+  products[i][k]=(k==='basePrice'||k==='fee')?(v===''?0:Number(v)):v;
+  if(k==='basePrice'||k==='fee') $('sell-'+i).textContent=rp((+products[i].basePrice||0)+(+products[i].fee||0));
+}
+function addProduct(){
+  products.push({id:'p-'+Date.now().toString(36),label:'',operator:'all',basePrice:0,fee:0,active:true});
+  renderProducts(); window.scrollTo(0,document.body.scrollHeight);
+}
+function delProduct(i){
+  if(!confirm('Hapus produk "'+(products[i].label||'baru')+'"? Kalau cuma mau menyembunyikan, matikan saja "Aktif".')) return;
+  products.splice(i,1); renderProducts();
+}
+async function saveProducts(){
+  const b=$('save-products'); b.disabled=true;
+  try{
+    const d=await api('/api/admin/config',{method:'PUT',body:JSON.stringify({products})});
+    products=d.products; renderProducts(); say('p-msg','Produk tersimpan. Langsung berlaku di app.',true);
+  }catch(e){ say('p-msg',e.message); }
+  b.disabled=false;
+}
+
+/* ---------- harga premium & dana ---------- */
+async function saveHarga(){
+  try{
+    await api('/api/admin/config',{method:'PUT',body:JSON.stringify({planPrices:{basic:$('pr-basic').value,pro:$('pr-pro').value},botPrices:{week:$('bp-week').value,month:$('bp-month').value},botNumber:$('bot-number').value,dana:$('dana').value})});
+    say('h-msg','Tersimpan. Langsung berlaku di app.',true);
+  }catch(e){ say('h-msg',e.message); }
+}
+
+/* ---------- pesanan ---------- */
+const ST={awaiting_payment:['Belum bayar','var(--soft)'],waiting_confirmation:['Menunggu konfirmasi','var(--amber)'],pending:['Pending','var(--soft)'],paid:['Lunas','var(--ok)'],failed:['Ditolak/Gagal','var(--danger)']};
+async function loadOrders(){
+  try{
+    const d=await api('/api/admin/orders');
+    $('olist').innerHTML=d.orders.map(o=>{
+      const st=ST[o.status]||[o.status,'var(--soft)'];
+      const open=!['paid','failed'].includes(o.status);
+      const detail=o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):('Ke: '+esc(o.phoneNumber));
+      return `<div class="card">
+        <div class="top"><b>${esc(o.productLabel)}</b><span class="badge" style="background:${st[1]}">${st[0]}</span></div>
+        <div class="small">${detail} · ${rp(o.price)}</div>
+        <div class="small">${esc(o.userName)} (${esc(o.userEmail)})</div>
+        <div class="small">${esc(new Date(o.createdAt).toLocaleString('id-ID'))} · ${esc(o.orderId)}</div>
+        ${open?`<div class="row" style="margin-top:10px"><button class="ok" onclick="settle('${esc(o.orderId)}','ok')">Konfirmasi</button><button class="danger" onclick="settle('${esc(o.orderId)}','no')">Tolak</button></div>`:''}
+      </div>`;
+    }).join('')||'<div class="small" style="margin-top:12px">Belum ada pesanan.</div>';
+  }catch(e){ say('o-msg',e.message); }
+}
+async function settle(orderId,action){
+  if(!confirm(action==='ok'?'Konfirmasi pesanan ini? Pastikan uang sudah masuk.':'Tolak pesanan ini?')) return;
+  try{
+    const d=await api('/api/admin/orders/settle',{method:'POST',body:JSON.stringify({orderId,action})});
+    say('o-msg',d.note,true); loadOrders();
+  }catch(e){ say('o-msg',e.message); }
+}
+
+if(token) start();
+</script>
+<script>
+/* ---------- layar loading Owner: Sasuke + Rasengan ---------- */
+(function(){
+  const sp=document.getElementById('owner-splash'); if(!sp) return;
+  if(!document.documentElement.classList.contains('owner-splash-on')){ sp.remove(); return; }
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fill=document.getElementById('os-fill'), pct=document.getElementById('os-pct'), cv=document.getElementById('os-cv'), ras=document.getElementById('os-ras');
+  
+  let stop=false, loaded=document.readyState==='complete', p=0;
+  if(!loaded) addEventListener('load', ()=>{ loaded=true; });
+  const MIN=reduce?900:2200, MAX=7000, t0=performance.now();
+  function hide(){ if(stop) return; stop=true; sp.classList.add('out'); setTimeout(()=>sp.remove(),700); }
+  setTimeout(hide, MAX+1500);
+  (function tick(now){
+    if(stop) return;
+    const el=now-t0, ready=(loaded&&el>=MIN)||el>=MAX;
+    const target=ready?100:Math.min(90,(el/MIN)*90);
+    p+=(target-p)*0.12; if(ready&&p>99.5) p=100;
+    fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';
+    ras.style.setProperty('--k',(0.6+0.55*p/100).toFixed(3));
+    if(p>=100){ ras.classList.add('burst'); setTimeout(hide,450); return; }
+    requestAnimationFrame(tick);
+  })(t0);
+  if(reduce||!cv) return;
+  const ctx=cv.getContext('2d'), dpr=Math.min(devicePixelRatio||1,2);
+  const W=cv.width=innerWidth*dpr, H=cv.height=innerHeight*dpr;
+  const cols=['255,70,90','150,120,255','90,190,255'];
+  const mk=init=>({x:Math.random()*W,y:init?Math.random()*H:H+20,r:(1+Math.random()*2.4)*dpr,vy:-(.3+Math.random()*.9)*dpr,vx:(Math.random()-.5)*.4*dpr,a:.25+Math.random()*.55,c:cols[Math.random()*3|0]});
+  const ps=Array.from({length:34},()=>mk(true));
+  (function draw(){
+    if(stop) return;
+    ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
+    for(const q of ps){
+      q.x+=q.vx+Math.sin(q.y/60)*.3*dpr; q.y+=q.vy;
+      if(q.y<-20) Object.assign(q,mk(false));
+      const g=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,q.r*4);
+      g.addColorStop(0,'rgba('+q.c+','+q.a+')'); g.addColorStop(1,'rgba('+q.c+',0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*4,0,6.283); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+})();
+</script>
+</body>
+</html>
