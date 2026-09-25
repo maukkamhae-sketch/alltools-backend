@@ -705,6 +705,16 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
   res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), dana: getDanaNumber() });
 });
 
+app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
+  const all = db.readDb();
+  const users = new Map(all.users.map(u => [u.id, u]));
+  const devices = [...all.amDevices].reverse().map(d => {
+    const u = users.get(d.userId);
+    return { ...d, apiKey: undefined, userName: u ? u.name : '(akun tidak ditemukan: ' + d.userId + ')', userEmail: u ? u.email : '-' };
+  });
+  res.json({ devices, totalUsers: all.users.length });
+});
+
 app.get('/api/admin/orders', requireOwner, (req, res) => {
   const all = db.readDb();
   const users = new Map(all.users.map(u => [u.id, u]));

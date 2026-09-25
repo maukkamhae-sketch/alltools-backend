@@ -130,7 +130,14 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
     <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
     <button id="t-order" onclick="tab('order')">Pesanan</button>
+    <button id="t-debug" onclick="tab('debug')">Cek Device</button>
   </div>
+
+  <section id="s-debug" class="hide">
+    <div class="small" style="margin-bottom:8px;">Semua device AntiMaling di server, apapun akunnya — buat mengecek kalau device tidak muncul di app.</div>
+    <button class="sec full" onclick="loadAmDebug()">Muat ulang</button>
+    <div id="am-debug-list"></div>
+  </section>
 
   <section id="s-produk">
     <div id="plist"></div>
@@ -226,11 +233,26 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order']){
+  for(const t of ['produk','harga','order','debug']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
   if(name==='order') loadOrders();
+  if(name==='debug') loadAmDebug();
+}
+
+async function loadAmDebug(){
+  const box=document.getElementById('am-debug-list');
+  box.innerHTML='<div class="small">Memuat...</div>';
+  try{
+    const d=await api('/api/admin/antimaling-devices');
+    box.innerHTML='<div class="small" style="margin:8px 0;">Total akun terdaftar: '+d.totalUsers+' · Total device: '+d.devices.length+'</div>'+
+      (d.devices.map(x=>`<div class="card">
+        <div class="top"><b>${esc(x.name)}</b><span class="badge" style="background:${x.paired?'var(--ok)':'var(--amber)'}">${x.paired?'Sudah pairing':'Kode: '+esc(x.pairCode)}</span></div>
+        <div class="small">${esc(x.userName)} (${esc(x.userEmail)})</div>
+        <div class="small">userId: ${esc(x.userId)} · deviceId: ${esc(x.id)}</div>
+      </div>`).join('') || '<div class="small">Belum ada device sama sekali di server.</div>');
+  }catch(e){ box.innerHTML='<div class="small">Gagal: '+esc(e.message)+'</div>'; }
 }
 
 /* ---------- produk ---------- */
