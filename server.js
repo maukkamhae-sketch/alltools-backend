@@ -10,7 +10,7 @@ const db = require('./db');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '6mb' })); // dinaikkan supaya muat foto base64 dari fitur anti-maling
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-jangan-dipakai-di-production';
@@ -525,8 +525,7 @@ function createAmDeviceFromOrder(order) {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
     userId: order.userId, name: order.deviceLabel, orderId: order.orderId,
     pairCode, paired: false, apiKey: null,
-    lockPin: String(Math.floor(1000 + Math.random() * 9000)), // PIN kunci kustom, beda dari PIN asli HP
-    battery: null, lastSeen: null, lastLocation: null, lastPhotoAt: null, createdAt: now,
+    battery: null, lastSeen: null, lastLocation: null, createdAt: now,
   };
   db.saveAmDevice(dev);
   return dev;
@@ -706,16 +705,6 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
   res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), dana: getDanaNumber() });
 });
 
-app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
-  const all = db.readDb();
-  const users = new Map(all.users.map(u => [u.id, u]));
-  const devices = [...all.amDevices].reverse().map(d => {
-    const u = users.get(d.userId);
-    return { ...d, apiKey: undefined, userName: u ? u.name : '(akun tidak ditemukan: ' + d.userId + ')', userEmail: u ? u.email : '-' };
-  });
-  res.json({ devices, totalUsers: all.users.length });
-});
-
 app.get('/api/admin/orders', requireOwner, (req, res) => {
   const all = db.readDb();
   const users = new Map(all.users.map(u => [u.id, u]));
@@ -779,26 +768,25 @@ app.post('/api/antimaling/devices/remove', requireAuth, (req, res) => {
 
 app.post('/api/antimaling/command', requireAuth, (req, res) => {
   const { deviceId, type, pin } = req.body || {};
-  if (!['lock', 'alarm', 'stop_alarm', 'locate', 'photo', 'wipe'].includes(type)) {
+  if (!['lock', 'alarm', 'stop_alarm', 'locate', 'wipe'].includes(type)) {
     return res.status(400).json({ error: 'Perintah tidak dikenali.' });
   }
   const dev = db.findAmDeviceById(deviceId);
   if (!dev || dev.userId !== req.user.id || !dev.paired) {
     return res.status(404).json({ error: 'Device tidak ditemukan atau belum pairing.' });
   }
-  const cmd = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-    deviceId, type, status: 'pending', createdAt: new Date().toISOString(),
-  };
-  // Perintah "lock" butuh PIN yang dikirim balik ke HP biar bisa dipakai
-  // buka kuncinya lagi. Pakai PIN yang diketik di dashboard; kalau kosong,
-  // pakai PIN otomatis yang sudah dibuat waktu pairing.
+  const extra = {};
   if (type === 'lock') {
-    const typedPin = String(pin || '').trim();
-    cmd.pin = typedPin || dev.lockPin || '';
-    if (!cmd.pin) return res.status(400).json({ error: 'PIN kunci belum ada untuk device ini.' });
+    const p = String(pin || '').trim();
+    if (!/^\d{4,6}$/.test(p)) return res.status(400).json({ error: 'PIN harus 4-6 digit angka.' });
+    extra.pin = p;
+    dev.lockPin = p; // simpan juga di device biar kelihatan di dashboard/admin kalau perlu
+    db.saveAmDevice(dev);
   }
-  db.saveAmCommand(cmd);
+  db.saveAmCommand({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    deviceId, type, status: 'pending', createdAt: new Date().toISOString(), ...extra,
+  });
   res.json({ ok: true });
 });
 
@@ -820,10 +808,9 @@ app.post('/api/antimaling/pair/claim', (req, res) => {
   dev.paired = true;
   dev.apiKey = crypto.randomBytes(20).toString('hex');
   dev.pairCode = null;
-  if (!dev.lockPin) dev.lockPin = String(Math.floor(1000 + Math.random() * 9000)); // device lama sebelum fitur PIN ada
   dev.lastSeen = new Date().toISOString();
   db.saveAmDevice(dev);
-  res.json({ deviceId: dev.id, apiKey: dev.apiKey, name: dev.name, lockPin: dev.lockPin });
+  res.json({ deviceId: dev.id, apiKey: dev.apiKey, name: dev.name });
 });
 
 app.get('/api/antimaling/device/commands', (req, res) => {
@@ -831,23 +818,6 @@ app.get('/api/antimaling/device/commands', (req, res) => {
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   dev.lastSeen = new Date().toISOString(); db.saveAmDevice(dev);
   res.json({ commands: db.getPendingAmCommands(dev.id) });
-});
-
-// Device ambil daftar app yang diblokir (dipanggil tiap 15 detik oleh GuardService)
-app.get('/api/antimaling/device/blocked-apps', (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  const dev = db.findAmDeviceByApiKey(apiKey);
-  if (!dev) return res.status(401).json({ error: 'Tidak dikenal.' });
-  res.json({ packages: db.getBlockedApps(dev.id) });
-});
-
-// Owner update daftar blokir dari dashboard
-app.post('/api/antimaling/blocked-apps', requireAuth, (req, res) => {
-  const { deviceId, packages } = req.body || {};
-  const dev = db.findAmDeviceById(deviceId);
-  if (!dev || dev.userId !== req.user.id) return res.status(404).json({ error: 'Device tidak ditemukan.' });
-  db.setBlockedApps(deviceId, Array.isArray(packages) ? packages : []);
-  res.json({ ok: true });
 });
 
 app.post('/api/antimaling/device/ack', (req, res) => {
@@ -878,38 +848,41 @@ app.post('/api/antimaling/device/battery', (req, res) => {
   res.json({ ok: true });
 });
 
-const AM_PHOTOS_DIR = path.join(process.env.DATA_DIR || __dirname, 'am-photos');
-
-// Dipanggil apk setelah berhasil ambil foto kamera depan diam-diam (perintah "photo").
-// Fotonya ditimpa tiap kali ambil baru, jadi cuma foto terakhir yang tersimpan
-// per device — bukan galeri, supaya penyimpanan server tidak membengkak.
-app.post('/api/antimaling/device/photo', express.json({ limit: '8mb' }), (req, res) => {
+// Foto diam-diam dari kamera depan HP pas ada yang salah masukin PIN di
+// lock screen. Cuma simpan yang PALING BARU per device (bukan riwayat semua
+// foto) supaya database gak bengkak — cukup buat tau siapa yang terakhir
+// pegang HP-nya.
+app.post('/api/antimaling/device/photo', (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
-  const { imageBase64 } = req.body || {};
-  if (!imageBase64) return res.status(400).json({ error: 'Data foto kosong.' });
-  try {
-    fs.mkdirSync(AM_PHOTOS_DIR, { recursive: true });
-    fs.writeFileSync(path.join(AM_PHOTOS_DIR, dev.id + '.jpg'), Buffer.from(imageBase64, 'base64'));
-    dev.lastPhotoAt = new Date().toISOString();
-    dev.lastSeen = dev.lastPhotoAt;
-    db.saveAmDevice(dev);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Gagal menyimpan foto di server.' });
-  }
+  const { photo } = req.body || {};
+  if (!photo || typeof photo !== 'string') return res.status(400).json({ error: 'Foto tidak valid.' });
+  dev.lastIntruderPhoto = { dataUrl: 'data:image/jpeg;base64,' + photo, at: new Date().toISOString() };
+  dev.lastSeen = dev.lastIntruderPhoto.at;
+  db.saveAmDevice(dev);
+  res.json({ ok: true });
 });
 
-// Dipanggil dashboard (app AllTools) untuk menampilkan foto terakhir. Pakai
-// requireAuth (bukan apiKey) supaya cuma pemilik device yang bisa melihatnya.
-app.get('/api/antimaling/device/photo/:deviceId', requireAuth, (req, res) => {
-  const dev = db.findAmDeviceById(req.params.deviceId);
+// ----- fitur "Blokir App" -----
+
+// Dipanggil dari apk (AppBlockerService lewat GuardService), pakai X-Api-Key.
+app.get('/api/antimaling/device/blocked-apps', (req, res) => {
+  const dev = findAmByApiKey(req);
+  if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
+  res.json({ packages: dev.blockedApps || [] });
+});
+
+// Dipanggil dari dashboard (owner, butuh login) buat atur daftar blokir per device.
+// Catatan: belum ada UI pemilih app di dashboard web — endpoint ini baru
+// fondasinya, kirim langsung array nama package (mis. "com.tiktok.android").
+app.post('/api/antimaling/devices/blocked-apps', requireAuth, (req, res) => {
+  const { deviceId, packages } = req.body || {};
+  const dev = db.findAmDeviceById(deviceId);
   if (!dev || dev.userId !== req.user.id) return res.status(404).json({ error: 'Device tidak ditemukan.' });
-  const file = path.join(AM_PHOTOS_DIR, dev.id + '.jpg');
-  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Belum ada foto.' });
-  res.setHeader('Content-Type', 'image/jpeg');
-  res.setHeader('Cache-Control', 'no-store');
-  res.sendFile(file);
+  if (!Array.isArray(packages)) return res.status(400).json({ error: 'packages harus array.' });
+  dev.blockedApps = packages.filter(p => typeof p === 'string');
+  db.saveAmDevice(dev);
+  res.json({ ok: true, blockedApps: dev.blockedApps });
 });
 
 /* ---------------------------------------------------------- */
