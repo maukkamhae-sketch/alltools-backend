@@ -9,8 +9,40 @@ const path = require('path');
 const db = require('./db');
 
 const app = express();
-app.use(cors());
+// CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
+// mis. "https://alltools.netlify.app,https://xxxx.netlify.app"). Kalau env
+// var belum diset, fallback ke izinkan semua (*) biar gak tiba-tiba
+// ke-block sebelum kamu sempat konfigurasi.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors(allowedOrigins.length ? {
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error('Origin tidak diizinkan: ' + origin));
+  }
+} : undefined));
 app.use(express.json({ limit: '6mb' })); // dinaikkan supaya muat foto base64 dari fitur anti-maling
+
+// Rate limiter ringan tanpa dependency tambahan: batasi tiap apiKey/IP
+// maksimal N request per menit ke endpoint device AntiMaling. Mencegah
+// spam lokasi/foto/baterai palsu kalau ada apiKey yang bocor.
+const rlBuckets = new Map(); // key -> { count, resetAt }
+function rateLimit(maxPerMinute) {
+  return (req, res, next) => {
+    const key = req.get('X-Api-Key') || req.ip;
+    const now = Date.now();
+    let b = rlBuckets.get(key);
+    if (!b || now > b.resetAt) { b = { count: 0, resetAt: now + 60_000 }; rlBuckets.set(key, b); }
+    b.count++;
+    if (b.count > maxPerMinute) return res.status(429).json({ error: 'Terlalu banyak request, coba lagi sebentar.' });
+    next();
+  };
+}
+// Bersihkan bucket lama tiap 5 menit biar Map-nya gak numpuk terus.
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, b] of rlBuckets) if (now > b.resetAt) rlBuckets.delete(k);
+}, 5 * 60_000);
+
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-jangan-dipakai-di-production';
@@ -813,14 +845,14 @@ app.post('/api/antimaling/pair/claim', (req, res) => {
   res.json({ deviceId: dev.id, apiKey: dev.apiKey, name: dev.name });
 });
 
-app.get('/api/antimaling/device/commands', (req, res) => {
+app.get('/api/antimaling/device/commands', rateLimit(60), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   dev.lastSeen = new Date().toISOString(); db.saveAmDevice(dev);
   res.json({ commands: db.getPendingAmCommands(dev.id) });
 });
 
-app.post('/api/antimaling/device/ack', (req, res) => {
+app.post('/api/antimaling/device/ack', rateLimit(60), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   const { commandId, result } = req.body || {};
@@ -828,7 +860,7 @@ app.post('/api/antimaling/device/ack', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/antimaling/device/location', (req, res) => {
+app.post('/api/antimaling/device/location', rateLimit(60), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   const { lat, lng, accuracy } = req.body || {};
@@ -839,7 +871,7 @@ app.post('/api/antimaling/device/location', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/antimaling/device/battery', (req, res) => {
+app.post('/api/antimaling/device/battery', rateLimit(60), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   const { percent, charging } = req.body || {};
@@ -852,11 +884,18 @@ app.post('/api/antimaling/device/battery', (req, res) => {
 // lock screen. Cuma simpan yang PALING BARU per device (bukan riwayat semua
 // foto) supaya database gak bengkak — cukup buat tau siapa yang terakhir
 // pegang HP-nya.
-app.post('/api/antimaling/device/photo', (req, res) => {
+app.post('/api/antimaling/device/photo', rateLimit(10), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   const { photo } = req.body || {};
   if (!photo || typeof photo !== 'string') return res.status(400).json({ error: 'Foto tidak valid.' });
+  // Batas wajar buat foto JPEG kualitas 70 dari kamera HP (base64 ~4MB).
+  // Angka acak/random string panjang yang nyamar jadi "foto" ditolak di sini juga.
+  if (photo.length > 4 * 1024 * 1024) return res.status(413).json({ error: 'Foto terlalu besar.' });
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(photo)) return res.status(400).json({ error: 'Format foto tidak valid.' });
+  const magic = Buffer.from(photo.slice(0, 8), 'base64');
+  const isJpeg = magic.length >= 2 && magic[0] === 0xFF && magic[1] === 0xD8;
+  if (!isJpeg) return res.status(400).json({ error: 'File bukan JPEG.' });
   dev.lastIntruderPhoto = { dataUrl: 'data:image/jpeg;base64,' + photo, at: new Date().toISOString() };
   dev.lastSeen = dev.lastIntruderPhoto.at;
   db.saveAmDevice(dev);
@@ -866,7 +905,7 @@ app.post('/api/antimaling/device/photo', (req, res) => {
 // ----- fitur "Blokir App" -----
 
 // Dipanggil dari apk (AppBlockerService lewat GuardService), pakai X-Api-Key.
-app.get('/api/antimaling/device/blocked-apps', (req, res) => {
+app.get('/api/antimaling/device/blocked-apps', rateLimit(60), (req, res) => {
   const dev = findAmByApiKey(req);
   if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
   res.json({ packages: dev.blockedApps || [] });
