@@ -1,0 +1,63 @@
+/**
+ * Global Chat — modul backend (drop-in untuk server Express kamu)
+ *
+ * Cara pasang di file server utama:
+ *
+ *   const express = require('express');
+ *   const { registerGlobalChat } = require('./global-chat-backend');
+ *   ...
+ *   registerGlobalChat(app, {
+ *     middleware: requireAuth,        // cek token, mengisi req.user
+ *     authUser: (req) => req.user,    // balikin {id, name, plan}
+ *   });
+ *
+ * Endpoint:
+ *   GET  /api/chat/global?after=<id>   -> { messages: [...] }  (after=0 -> 50 pesan terakhir)
+ *   POST /api/chat/global {text}       -> { message }
+ *
+ * Pesan disimpan di file JSON (global-chat.json), maksimal 200 pesan terakhir.
+ */
+const fs = require('fs');
+const path = require('path');
+
+function registerGlobalChat(app, opts) {
+  const authUser = opts.authUser;
+  const file = opts.file || path.join(process.env.DATA_DIR || __dirname, 'global-chat.json');
+  const mw = opts.middleware ? [opts.middleware] : [];
+  const MAX_KEEP = 200, MAX_LEN = 300, COOLDOWN_MS = 1500;
+  let msgs = [], nextId = 1;
+  try {
+    msgs = JSON.parse(fs.readFileSync(file, 'utf8'));
+    nextId = (msgs.length ? msgs[msgs.length - 1].id : 0) + 1;
+  } catch (e) {}
+  const lastSend = new Map();
+  let saveTimer = null;
+  const save = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => fs.writeFile(file, JSON.stringify(msgs), () => {}), 500);
+  };
+
+  app.get('/api/chat/global', ...mw, (req, res) => {
+    if (!authUser(req)) return res.status(401).json({ error: 'Masuk dulu.' });
+    const after = parseInt(req.query.after, 10) || 0;
+    const out = after > 0 ? msgs.filter(m => m.id > after) : msgs.slice(-50);
+    res.json({ messages: out });
+  });
+
+  app.post('/api/chat/global', ...mw, (req, res) => {
+    const u = authUser(req);
+    if (!u) return res.status(401).json({ error: 'Masuk dulu.' });
+    const text = String((req.body && req.body.text) || '').replace(/\s+/g, ' ').trim().slice(0, MAX_LEN);
+    if (!text) return res.status(400).json({ error: 'Pesan kosong.' });
+    const now = Date.now();
+    if (now - (lastSend.get(u.id) || 0) < COOLDOWN_MS) return res.status(429).json({ error: 'Pelan-pelan, jangan spam.' });
+    lastSend.set(u.id, now);
+    const message = { id: nextId++, user_id: u.id, name: u.name || 'User', plan: u.plan || 'free', text, ts: now };
+    msgs.push(message);
+    if (msgs.length > MAX_KEEP) msgs = msgs.slice(-MAX_KEEP);
+    save();
+    res.json({ message });
+  });
+}
+
+module.exports = { registerGlobalChat };
