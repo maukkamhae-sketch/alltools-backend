@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./db');
 const { registerGlobalChat } = require('./global-chat-backend');
+const { registerSupport } = require('./support-backend');
 
 const app = express();
 // CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
@@ -1210,6 +1211,9 @@ app.get('/site/:slug', (req, res) => {
 
 /* Global Chat (Beranda) */
 registerGlobalChat(app, { middleware: requireAuth, authUser: (req) => req.user });
+
+/* Customer Service: bot topik bantuan + Live Admin */
+registerSupport(app, { middleware: requireAuth, authUser: (req) => req.user });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });

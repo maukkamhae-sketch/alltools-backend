@@ -88,6 +88,17 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
 @keyframes osPulseB{0%,100%{opacity:.9;}50%{opacity:.25;}}
 @keyframes osAutoHide{to{opacity:0;visibility:hidden;pointer-events:none;}}
 @media (prefers-reduced-motion:reduce){#owner-splash .os-bg,#owner-splash .os-glow{animation:none!important;}}
+
+.sp-row{display:block;width:100%;text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;font-weight:500;}
+.sp-row b{font-weight:700;}
+.sp-last{font-size:12px;color:var(--soft);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#sp-msgs{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding:6px 2px;margin-top:8px;}
+.sp-m{max-width:86%;padding:8px 11px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;align-self:flex-start;}
+.sp-m.admin{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-color:transparent;}
+.sp-m.bot{align-self:center;font-size:12px;color:var(--soft);border-style:dashed;background:transparent;}
+.sp-t{font-size:10px;opacity:.6;margin-top:3px;}
+.sp-bar{display:flex;gap:8px;margin-top:10px;}
+.sp-bar input{flex:1;}
 </style>
 </head>
 <body>
@@ -132,6 +143,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-order" onclick="tab('order')">Pesanan</button>
     <button id="t-debug" onclick="tab('debug')">Cek Device</button>
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
+    <button id="t-bantuan" onclick="tab('bantuan')">Bantuan<span id="sp-dot" class="badge" style="background:var(--danger);margin-left:6px;display:none"></span></button>
   </div>
 
   <section id="s-debug" class="hide">
@@ -198,6 +210,29 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     </div>
   </section>
 
+  <section id="s-bantuan" class="hide">
+    <div id="sp-listview">
+      <div class="small" style="margin-bottom:8px;">Chat dari user lewat menu Customer Service. Yang berstatus LIVE sedang menunggu balasanmu.</div>
+      <button class="sec full" onclick="loadSupport()">Muat ulang</button>
+      <div id="sp-list"></div>
+      <div class="msg" id="sp-note"></div>
+    </div>
+    <div id="sp-chatview" class="hide">
+      <div class="top">
+        <button class="sec" onclick="closeSupportChat()">← Kembali</button>
+        <span id="sp-status" class="badge" style="background:var(--ok)"></span>
+      </div>
+      <div id="sp-who" class="small" style="margin-top:8px;"></div>
+      <div id="sp-msgs"></div>
+      <div class="sp-bar">
+        <input type="text" id="sp-input" maxlength="500" placeholder="Tulis balasan..." autocomplete="off" onkeydown="if(event.key==='Enter')replySupport()">
+        <button onclick="replySupport()" id="sp-send">Kirim</button>
+      </div>
+      <button class="danger full" onclick="closeSupportTicket()">Tutup chat ini</button>
+      <div class="msg" id="sp-err"></div>
+    </div>
+  </section>
+
   <section id="s-order" class="hide">
     <button class="sec full" onclick="loadOrders()">Muat ulang</button>
     <div id="olist"></div>
@@ -244,6 +279,7 @@ async function start(){
     $('login').classList.add('hide'); $('app').classList.remove('hide'); $('logout').classList.remove('hide');
     renderProducts();
     mpInit();
+    loadSupport();
   }catch(e){
     if(e.status===401||e.status===403){ token=''; try{ localStorage.removeItem('admin_token'); }catch(x){} }
     $('login').classList.remove('hide'); $('app').classList.add('hide');
@@ -252,13 +288,14 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint']){
+  for(const t of ['produk','harga','order','debug','maint','bantuan']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
   if(name==='order') loadOrders();
   if(name==='debug') loadAmDebug();
   if(name==='maint') loadMaint();
+  if(name==='bantuan') loadSupport();
 }
 
 async function loadMaint(){
@@ -279,6 +316,72 @@ async function saveMaint(on){
     loadMaint();
   }catch(e){ say('mt-note',e.message); }
 }
+
+let spUser=null, spLast=0;
+function spTime(ts){ try{ return new Date(ts).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}); }catch(e){ return ''; } }
+async function loadSupport(){
+  try{
+    const d=await api('/api/admin/support');
+    const dot=$('sp-dot');
+    const n=d.unreadCount||0; dot.textContent=n; dot.style.display=n?'inline-block':'none';
+    $('sp-list').innerHTML=d.tickets.map(t=>`<button class="sp-row" onclick="openSupportChat('${esc(t.userId)}')">
+        <div class="top"><b>${esc(t.name)}</b><span class="badge" style="background:${t.status==='live'?'var(--ok)':'var(--soft)'}">${t.status==='live'?'LIVE':'bot'}${t.unread?' · baru':''}</span></div>
+        <div class="small">${esc(t.email)} · ${esc(t.plan)} · ${spTime(t.updatedAt)}</div>
+        <div class="sp-last">${esc(t.last)}</div></button>`).join('')||'<div class="small" style="margin-top:8px;">Belum ada chat dari user.</div>';
+    $('sp-note').className='msg';
+  }catch(e){ say('sp-note','Gagal memuat: '+e.message); }
+}
+function renderSupportMsgs(list,reset){
+  const box=$('sp-msgs');
+  const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
+  if(reset){ box.innerHTML=''; spLast=0; }
+  for(const m of list){
+    if(m.id<=spLast) continue; spLast=m.id;
+    const div=document.createElement('div');
+    div.className='sp-m '+m.from;
+    div.innerHTML=esc(m.text)+'<div class="sp-t">'+(m.from==='admin'?'Kamu':(m.from==='bot'?'Bot':'User'))+' · '+spTime(m.ts)+'</div>';
+    box.appendChild(div);
+  }
+  if(reset||near) box.scrollTop=box.scrollHeight;
+}
+async function openSupportChat(userId){
+  spUser=userId;
+  try{
+    const d=await api('/api/admin/support/'+encodeURIComponent(userId));
+    $('sp-listview').classList.add('hide'); $('sp-chatview').classList.remove('hide');
+    $('sp-who').textContent=d.name+' · '+d.email+' · paket '+d.plan;
+    const st=$('sp-status'); st.textContent=d.status==='live'?'LIVE':'bot'; st.style.background=d.status==='live'?'var(--ok)':'var(--soft)';
+    renderSupportMsgs(d.messages,true);
+    $('sp-err').className='msg';
+  }catch(e){ say('sp-note',e.message); }
+}
+function closeSupportChat(){ spUser=null; $('sp-chatview').classList.add('hide'); $('sp-listview').classList.remove('hide'); loadSupport(); }
+async function pollSupportChat(){
+  if(!spUser) return;
+  try{
+    const d=await api('/api/admin/support/'+encodeURIComponent(spUser)+'?after='+spLast);
+    renderSupportMsgs(d.messages,false);
+    const st=$('sp-status'); st.textContent=d.status==='live'?'LIVE':'bot'; st.style.background=d.status==='live'?'var(--ok)':'var(--soft)';
+  }catch(e){}
+}
+async function replySupport(){
+  const inp=$('sp-input'), text=inp.value.trim(); if(!text||!spUser) return;
+  $('sp-send').disabled=true;
+  try{
+    const d=await api('/api/admin/support/'+encodeURIComponent(spUser)+'/reply',{method:'POST',body:JSON.stringify({text})});
+    inp.value=''; renderSupportMsgs([d.message],false); $('sp-msgs').scrollTop=$('sp-msgs').scrollHeight;
+    $('sp-err').className='msg';
+  }catch(e){ say('sp-err',e.message); }
+  $('sp-send').disabled=false; inp.focus();
+}
+async function closeSupportTicket(){
+  if(!spUser||!confirm('Tutup chat ini? User akan kembali ke menu topik bot.')) return;
+  try{ await api('/api/admin/support/'+encodeURIComponent(spUser)+'/close',{method:'POST'}); await pollSupportChat(); }catch(e){ say('sp-err',e.message); }
+}
+setInterval(()=>{
+  if(document.hidden||$('app').classList.contains('hide')) return;
+  if(!$('s-bantuan').classList.contains('hide')){ if(spUser) pollSupportChat(); else loadSupport(); }
+},5000);
 
 async function loadAmDebug(){
   const box=document.getElementById('am-debug-list');
