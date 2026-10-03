@@ -14,7 +14,7 @@ const app = express();
 // mis. "https://alltools.netlify.app,https://xxxx.netlify.app"). Kalau env
 // var belum diset, fallback ke izinkan semua (*) biar gak tiba-tiba
 // ke-block sebelum kamu sempat konfigurasi.
-const allowedOrigins = ['https://gentle-gumption-962cfc.netlify.app', ...(process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)];
+const allowedOrigins = ['https://gentle-gumption-962cfc.netlify.app', 'https://iridescent-chaja-079644.netlify.app', ...(process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)];
 app.use(cors(allowedOrigins.length ? {
   origin: (origin, cb) => {
     if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
