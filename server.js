@@ -20,6 +20,7 @@ const app = express();
 const allowedOrigins = [
   'https://gentle-gumption-962cfc.netlify.app',
   'https://iridescent-chaja-079644.netlify.app',
+  'https://eclectic-sundae-0b98b4.netlify.app',
   ...(process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
 ];
 // Izinkan: request tanpa Origin, domain di daftar, dan halaman /admin milik server ini sendiri.
@@ -1286,6 +1287,40 @@ app.get('/api/shop/items', (req, res) => {
 
 /* AllTools Shop: katalog produk bawaan + item buatan Owner */
 registerShop(app, { db, requireAuth, requireOwner, getPlanPrices, getBotPrices, getAmPrice, getPulsaProducts });
+
+/* ---------------------------------------------------------- */
+/* Inbox: pengumuman/pemberitahuan dari Owner untuk semua user.   */
+/* Disimpan di settings.inbox (maks 50 pesan terakhir).           */
+/* ---------------------------------------------------------- */
+const INBOX_MAX = 50;
+function getInbox() {
+  const raw = db.getSettings().inbox;
+  return Array.isArray(raw) ? raw : [];
+}
+app.get('/api/inbox', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ items: getInbox().slice(-30).reverse() });
+});
+app.get('/api/admin/inbox', requireOwner, (req, res) => {
+  res.json({ items: getInbox().slice().reverse() });
+});
+app.post('/api/admin/inbox', requireOwner, (req, res) => {
+  const title = String((req.body && req.body.title) || '').trim().slice(0, 80);
+  const text = String((req.body && req.body.text) || '').trim().slice(0, 600);
+  if (!text) return res.status(400).json({ error: 'Isi pesan tidak boleh kosong.' });
+  const items = getInbox().slice();
+  const id = items.reduce((m, i) => Math.max(m, Number(i.id) || 0), 0) + 1;
+  const item = { id, title: title || 'Pemberitahuan', text, ts: Date.now() };
+  items.push(item);
+  db.updateSettings({ inbox: items.slice(-INBOX_MAX) });
+  res.json({ ok: true, item });
+});
+app.delete('/api/admin/inbox/:id', requireOwner, (req, res) => {
+  const id = Number(req.params.id);
+  const items = getInbox().filter(i => Number(i.id) !== id);
+  db.updateSettings({ inbox: items });
+  res.json({ ok: true });
+});
 
 /* Sender WhatsApp per bot sewaan (pairing code, semua fitur bot) */
 registerBotSender(app, { db, requireAuth, askAI: askGemini });

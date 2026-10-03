@@ -143,6 +143,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-order" onclick="tab('order')">Pesanan</button>
     <button id="t-debug" onclick="tab('debug')">Cek Device</button>
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
+    <button id="t-inbox" onclick="tab('inbox')">Inbox</button>
     <button id="t-bantuan" onclick="tab('bantuan')">Bantuan<span id="sp-dot" class="badge" style="background:var(--danger);margin-left:6px;display:none"></span></button>
   </div>
 
@@ -208,6 +209,20 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       <button class="full ok" id="mt-btn-off" onclick="saveMaint(false)">Buka app (matikan maintenance)</button>
       <div class="msg" id="mt-note"></div>
     </div>
+  </section>
+
+  <section id="s-inbox" class="hide">
+    <div class="card">
+      <b>Kirim pemberitahuan ke semua user</b>
+      <div class="small">Muncul di ikon lonceng 🔔 kanan atas app. User yang belum membaca melihat angka merah.</div>
+      <label>Judul</label>
+      <input type="text" id="ib-title" maxlength="80" placeholder="Contoh: Update fitur bot">
+      <label>Isi pesan</label>
+      <textarea id="ib-text" rows="4" maxlength="600" placeholder="Tulis pengumuman di sini..."></textarea>
+      <button class="full" id="ib-send" onclick="sendInbox()">Kirim</button>
+      <div class="msg" id="ib-note"></div>
+    </div>
+    <div id="ib-list"></div>
   </section>
 
   <section id="s-bantuan" class="hide">
@@ -288,7 +303,7 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint','bantuan']){
+  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
@@ -296,6 +311,30 @@ function tab(name){
   if(name==='debug') loadAmDebug();
   if(name==='maint') loadMaint();
   if(name==='bantuan') loadSupport();
+  if(name==='inbox') loadInboxAdmin();
+}
+
+async function loadInboxAdmin(){
+  try{
+    const d=await api('/api/admin/inbox');
+    $('ib-list').innerHTML=d.items.map(i=>`<div class="card"><div class="top"><b>${esc(i.title)}</b><button onclick="delInbox(${i.id})" style="background:var(--danger);color:#fff;border:0;border-radius:8px;padding:6px 10px;">Hapus</button></div><div style="font-size:13px;margin-top:6px;white-space:pre-wrap;">${esc(i.text)}</div><div class="small">${spTime(i.ts)}</div></div>`).join('')||'<div class="small" style="margin-top:8px;">Belum ada pemberitahuan terkirim.</div>';
+  }catch(e){ say('ib-note','Gagal memuat: '+e.message); }
+}
+async function sendInbox(){
+  const title=$('ib-title').value.trim(), text=$('ib-text').value.trim();
+  if(!text){ say('ib-note','Isi pesan tidak boleh kosong.'); return; }
+  $('ib-send').disabled=true;
+  try{
+    await api('/api/admin/inbox',{method:'POST',body:JSON.stringify({title,text})});
+    $('ib-title').value=''; $('ib-text').value='';
+    say('ib-note','Terkirim ke semua user.',true);
+    loadInboxAdmin();
+  }catch(e){ say('ib-note',e.message); }
+  $('ib-send').disabled=false;
+}
+async function delInbox(id){
+  if(!confirm('Hapus pemberitahuan ini?')) return;
+  try{ await api('/api/admin/inbox/'+id,{method:'DELETE'}); loadInboxAdmin(); }catch(e){ say('ib-note',e.message); }
 }
 
 async function loadMaint(){
