@@ -386,7 +386,7 @@ const DEFAULT_BOT_NUMBER = '62881012484500';
 function getBotNumber() {
   return db.getSettings().platformBotNumber || DEFAULT_BOT_NUMBER;
 }
-const BOT_FEATURES = ['autoreply','welcome','catalog','broadcast','antilink','reminder','orderbot','faq','ai','downloader'];
+const BOT_FEATURES = ['autoreply','welcome','catalog','broadcast','antilink','reminder','orderbot','faq','ai','downloader','sticker'];
 function getBotPrices() {
   return { week: 25000, month: 75000, ...(db.getSettings().botPrices || {}) };
 }

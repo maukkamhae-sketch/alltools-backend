@@ -9,7 +9,9 @@
  *   const { registerBotSender } = require('./bot-sender');
  *   registerBotSender(app, { db, requireAuth, askAI: askGemini });
  *
- * Dependency:  npm i @whiskeysockets/baileys pino
+ * Dependency:  npm i @whiskeysockets/baileys pino sharp
+ * Fitur sticker: sharp (gambar & .brat). Sticker dari video butuh ffmpeg di server.
+ * .brat butuh font di server (mis. DejaVu / Liberation) supaya teks tampil.
  * Wajib ada di server untuk fitur downloader: yt-dlp (sudah dipakai fitur Downloader).
  *
  * Endpoint (semua butuh login, hanya pemilik bot):
@@ -31,7 +33,7 @@ const MAX_SESSIONS = Number(process.env.BOT_MAX_SESSIONS) || 30;
 const AI_DAILY_CAP = Number(process.env.BOT_AI_DAILY_CAP) || 200;
 const LINK_RE = /(https?:\/\/|www\.|chat\.whatsapp\.com\/)\S+/i;
 
-const ALL_FEATURES = ['autoreply', 'welcome', 'catalog', 'broadcast', 'antilink', 'reminder', 'orderbot', 'faq', 'ai', 'downloader'];
+const ALL_FEATURES = ['autoreply', 'welcome', 'catalog', 'broadcast', 'antilink', 'reminder', 'orderbot', 'faq', 'ai', 'downloader', 'sticker'];
 
 /* ---------------------------------------------------------- */
 /* Config & util                                              */
@@ -159,6 +161,103 @@ function downloadVideo(url) {
   });
 }
 
+
+/* ---------------------------------------------------------- */
+/* Sticker & Brat                                              */
+/* ---------------------------------------------------------- */
+const xmlEsc = t => String(t).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+
+function getSharp() {
+  try { return require('sharp'); }
+  catch (e) { throw new Error('Library sharp belum terpasang di server (npm i sharp).'); }
+}
+
+// cari media (gambar/video/sticker) di pesan itu sendiri atau pesan yang di-reply
+function findMedia(m) {
+  const unwrap = x => x && (x.ephemeralMessage?.message || x.viewOnceMessage?.message || x.viewOnceMessageV2?.message || x.documentWithCaptionMessage?.message || x);
+  const pick = x => {
+    x = unwrap(x);
+    if (!x) return null;
+    if (x.imageMessage) return { type: 'image', node: { imageMessage: x.imageMessage } };
+    if (x.videoMessage) return { type: 'video', node: { videoMessage: x.videoMessage }, seconds: Number(x.videoMessage.seconds) || 0 };
+    if (x.stickerMessage) return { type: 'sticker', node: { stickerMessage: x.stickerMessage } };
+    return null;
+  };
+  const own = unwrap(m.message);
+  const direct = pick(own);
+  if (direct) return { ...direct, msg: m };
+  const ci = own && (own.extendedTextMessage?.contextInfo || own.imageMessage?.contextInfo || own.videoMessage?.contextInfo);
+  const q = ci && pick(ci.quotedMessage);
+  if (q) return { ...q, msg: { key: { remoteJid: m.key.remoteJid, id: ci.stanzaId, participant: ci.participant, fromMe: false }, message: q.node } };
+  return null;
+}
+function quotedText(m) {
+  const x = m.message?.ephemeralMessage?.message || m.message;
+  const q = x && x.extendedTextMessage?.contextInfo?.quotedMessage;
+  if (!q) return '';
+  return q.conversation || q.extendedTextMessage?.text || q.imageMessage?.caption || q.videoMessage?.caption || '';
+}
+
+async function imageToSticker(buf) {
+  const sharp = getSharp();
+  return sharp(buf, { animated: false })
+    .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .webp({ quality: 80 })
+    .toBuffer();
+}
+
+function videoToSticker(buf) {
+  return new Promise((resolve, reject) => {
+    const base = path.join(os.tmpdir(), 'stk-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7));
+    const inp = base + '.in', out = base + '.webp';
+    fs.writeFileSync(inp, buf);
+    const clean = () => { fs.unlink(inp, () => {}); fs.unlink(out, () => {}); };
+    const proc = spawn('ffmpeg', ['-y', '-i', inp, '-t', '8', '-an', '-vcodec', 'libwebp',
+      '-vf', 'scale=512:512:force_original_aspect_ratio=decrease,fps=12,pad=512:512:-1:-1:color=0x00000000,format=rgba',
+      '-loop', '0', '-preset', 'default', '-q:v', '45', '-fs', '900k', out]);
+    const timer = setTimeout(() => proc.kill('SIGKILL'), 60000);
+    proc.on('error', () => { clearTimeout(timer); clean(); reject(new Error('ffmpeg belum terpasang di server, jadi sticker video belum bisa.')); });
+    proc.on('close', code => {
+      clearTimeout(timer);
+      try {
+        if (code !== 0 || !fs.existsSync(out)) throw new Error('Gagal membuat sticker dari video.');
+        const r = fs.readFileSync(out); clean(); resolve(r);
+      } catch (e) { clean(); reject(e); }
+    });
+  });
+}
+
+// gaya "brat": latar hijau lime, teks hitam huruf kecil, agak blur, rata kiri
+function wrapBrat(text, size, maxW) {
+  const cw = size * 0.5; // perkiraan lebar karakter
+  const perLine = Math.max(1, Math.floor(maxW / cw));
+  const lines = []; let cur = '';
+  for (let w of text.split(/\s+/)) {
+    while (w.length > perLine) { // kata terlalu panjang: potong
+      if (cur) { lines.push(cur); cur = ''; }
+      lines.push(w.slice(0, perLine)); w = w.slice(perLine);
+    }
+    if (!cur) cur = w; else if ((cur + ' ' + w).length <= perLine) cur += ' ' + w; else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+async function makeBrat(text) {
+  const sharp = getSharp();
+  const t = clip(text, 200).toLowerCase().replace(/\s+/g, ' ').trim();
+  const W = 512, pad = 28, maxW = W - pad * 2;
+  let size = 170, lines = wrapBrat(t, size, maxW);
+  while (size > 28 && lines.length * size * 1.08 > W - pad * 2) { size -= 6; lines = wrapBrat(t, size, maxW); }
+  const tspans = lines.map((l, i) => `<text x="${pad}" y="${pad + size * 0.85 + i * size * 1.08}" font-size="${size}" font-family="Arial Narrow, Arial, Liberation Sans, DejaVu Sans, sans-serif" fill="#000">${xmlEsc(l)}</text>`).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}"><rect width="100%" height="100%" fill="#8ACF00"/><g filter="url(#b)">${tspans}</g><defs><filter id="b"><feGaussianBlur stdDeviation="1.4"/></filter></defs></svg>`;
+  return sharp(Buffer.from(svg)).webp({ quality: 90 }).toBuffer();
+}
+
+async function fetchMediaBuffer(ctx, media) {
+  const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+  return downloadMediaMessage(media.msg, 'buffer', {}, { logger: require('pino')({ level: 'silent' }), reuploadRequest: ctx.sock.updateMediaMessage });
+}
+
 /* ---------------------------------------------------------- */
 /* Handler pesan (dipisah dari koneksi supaya bisa dites)       */
 /* ---------------------------------------------------------- */
@@ -188,6 +287,7 @@ function menuText(meta) {
   if (has('faq')) L.push(`${p}faq — daftar pertanyaan umum`);
   if (has('ai')) L.push(`${p}ai <pertanyaan> — tanya AI`);
   if (has('downloader')) L.push(`${p}dl <link> — download video (TikTok/IG/YouTube dll)`);
+  if (has('sticker')) L.push(`${p}s — kirim/reply gambar atau video jadi stiker`, `${p}brat <teks> — stiker gaya brat`);
   if (has('reminder')) L.push(`${p}ingatkan <10m|2j|1d> <teks> — pengingat`, `${p}absen mulai|selesai, ${p}hadir, ${p}absen — absen grup`);
   if (has('orderbot')) L.push(`Ketik "order ..." untuk memesan`, `${p}pesanan — (owner) daftar pesanan`);
   if (has('broadcast')) L.push(`${p}bc <teks> — (owner) broadcast ke semua yang pernah chat`);
@@ -290,6 +390,31 @@ async function onMessage(ctx, m) {
       } catch (e) { await reply('❌ ' + e.message); }
       finally { ctx.downloading--; if (file) fs.unlink(file, () => {}); }
       return;
+    }
+
+    if ((cmd === 'brat') && has('sticker')) {
+      const txt = (rest || quotedText(m)).trim();
+      if (!txt) return reply(`Contoh: ${p}brat halo semuanya\nAtau reply sebuah teks lalu ketik ${p}brat`);
+      const last = ctx.cool.get('stk:' + sender) || 0;
+      if (Date.now() - last < 3000) return reply('Pelan-pelan ya, tunggu beberapa detik.');
+      ctx.cool.set('stk:' + sender, Date.now());
+      try { return await send(ctx, jid, { sticker: await makeBrat(txt) }, m); }
+      catch (e) { return reply('❌ ' + e.message); }
+    }
+
+    if ((cmd === 's' || cmd === 'sticker' || cmd === 'stiker') && has('sticker')) {
+      const media = findMedia(m);
+      if (!media) return reply(`Kirim gambar/video dengan caption ${p}s, atau reply gambar/video lalu ketik ${p}s`);
+      if (media.type === 'video' && media.seconds > 10) return reply('Video maksimal 10 detik ya.');
+      const last = ctx.cool.get('stk:' + sender) || 0;
+      if (Date.now() - last < 3000) return reply('Pelan-pelan ya, tunggu beberapa detik.');
+      ctx.cool.set('stk:' + sender, Date.now());
+      try {
+        const buf = await fetchMediaBuffer(ctx, media);
+        if (buf.length > 15 * 1024 * 1024) return reply('File terlalu besar (maks 15MB).');
+        const out = media.type === 'video' ? await videoToSticker(buf) : await imageToSticker(buf);
+        return await send(ctx, jid, { sticker: out }, m);
+      } catch (e) { return reply('❌ ' + (e.message || 'Gagal membuat stiker.')); }
     }
 
     if (cmd === 'ingatkan' && has('reminder')) {
@@ -617,4 +742,4 @@ function registerBotSender(app, opts) {
   }, 15000).unref();
 }
 
-module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText } };
+module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText, findMedia, makeBrat, imageToSticker } };
