@@ -8,7 +8,7 @@
  *   ...
  *   registerGlobalChat(app, {
  *     middleware: requireAuth,        // cek token, mengisi req.user
- *     authUser: (req) => req.user,    // balikin {id, name, plan}
+ *     authUser: (req) => req.user,    // balikin {id, name, plan, roleBadge}
  *   });
  *
  * Endpoint:
@@ -52,7 +52,7 @@ function registerGlobalChat(app, opts) {
     const now = Date.now();
     if (now - (lastSend.get(u.id) || 0) < COOLDOWN_MS) return res.status(429).json({ error: 'Pelan-pelan, jangan spam.' });
     lastSend.set(u.id, now);
-    const message = { id: nextId++, user_id: u.id, name: u.name || 'User', plan: u.plan || 'free', text, ts: now };
+    const message = { id: nextId++, user_id: u.id, name: u.name || 'User', plan: u.plan || 'free', badge: u.roleBadge || '', text, ts: now };
     msgs.push(message);
     if (msgs.length > MAX_KEEP) msgs = msgs.slice(-MAX_KEEP);
     save();

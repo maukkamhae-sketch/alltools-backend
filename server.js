@@ -9,6 +9,8 @@ const path = require('path');
 const db = require('./db');
 const { registerGlobalChat } = require('./global-chat-backend');
 const { registerSupport } = require('./support-backend');
+const { registerShop } = require('./shop-backend');
+const { registerBotSender } = require('./bot-sender');
 
 const app = express();
 // CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
@@ -145,7 +147,7 @@ function requireAuth(req, res, next) {
 function publicUser(user) {
   const unlimited = user.plan === 'owner' || user.plan === 'basic' || user.plan === 'pro';
   return {
-    id: user.id, name: user.name, email: user.email, plan: user.plan,
+    id: user.id, name: user.name, email: user.email, plan: user.plan, roleBadge: user.roleBadge || '',
     quota: user.quota,
     limits: unlimited
       ? { downloads: 'unlimited', ai: user.plan === 'pro' || user.plan === 'owner' ? 'unlimited' : 100, enhance: 'unlimited', convert: 'unlimited' }
@@ -465,7 +467,7 @@ app.post('/api/pulsa/create-transaction', requireAuth, async (req, res) => {
 });
 
 app.get('/api/pulsa/orders', requireAuth, (req, res) => {
-  res.json({ orders: db.getOrdersForUser(req.user.id).filter(o => !['premium', 'bot', 'antimaling'].includes(o.type)) });
+  res.json({ orders: db.getOrdersForUser(req.user.id).filter(o => !['premium', 'bot', 'antimaling', 'shop'].includes(o.type)) });
 });
 
 
@@ -497,6 +499,15 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     label = `Proteksi AntiMaling — ${devName}`;
     price = getAmPrice();
     extra = { type: 'antimaling', deviceLabel: devName };
+  } else if (type === 'shop') {
+    const item = getShopTitles().find(i => i.id === String(req.body.itemId || ''));
+    if (!item) return res.status(400).json({ error: 'Titel tidak ditemukan atau sudah tidak dijual.' });
+    if (req.user.plan !== 'owner' && titleRankOf(req.user.roleBadge) >= item.rank) {
+      return res.status(400).json({ error: 'Kamu sudah punya titel ini atau yang lebih tinggi.' });
+    }
+    label = item.name;
+    price = item.price;
+    extra = { type: 'shop', itemId: item.id, itemName: item.name, itemKind: item.kind, roleBadge: item.roleBadge || '', itemNote: item.note || '', grantPlan: item.grantPlan || '' };
   } else if (type === 'bot') {
     const days = Number(durationDays);
     if (![7, 30].includes(days)) return res.status(400).json({ error: 'Durasi sewa tidak valid.' });
@@ -538,6 +549,8 @@ app.post('/api/manual/claim', requireAuth, async (req, res) => {
     db.saveOrder(order);
     const detail = order.type === 'premium'
       ? `Paket: ${escapeHtml(order.plan)}`
+      : order.type === 'shop'
+        ? `Item Shop: ${escapeHtml(order.itemName)}${order.itemKind === 'role' ? '\nLabel role: ' + escapeHtml(order.roleBadge) : ' (kirim manual)'}`
       : order.type === 'bot'
         ? `Sewa bot: ${escapeHtml(order.botName)}\nDurasi: ${order.durationDays} hari\nFitur: ${escapeHtml(order.features.join(', '))}`
         : order.type === 'antimaling'
@@ -618,9 +631,23 @@ function settleOrder(order, action) {
       if (user) { user.plan = order.plan; db.saveUser(user); }
       return { ok: true, note: `✅ Dikonfirmasi. Paket ${order.plan} sudah diaktifkan.` };
     }
+    if (order.type === 'shop') {
+      if (order.itemKind === 'role') {
+        const user = db.findUserById(order.userId);
+        if (user) {
+          // Titel hanya naik, tidak turun. Plan hanya di-upgrade, owner tidak disentuh.
+          if (titleRankOf(order.roleBadge) >= titleRankOf(user.roleBadge)) user.roleBadge = order.roleBadge;
+          const gp = order.grantPlan;
+          if (gp && user.plan !== 'owner' && (PLAN_RANK[gp] || 0) > (PLAN_RANK[user.plan] || 0)) user.plan = gp;
+          db.saveUser(user);
+        }
+        return { ok: true, note: `✅ Dikonfirmasi. Titel "${order.roleBadge}" sudah dipasang${order.grantPlan ? ' + paket ' + order.grantPlan + ' aktif' : ''} di akun pemesan.` };
+      }
+      return { ok: true, note: `✅ Dikonfirmasi. Tolong kirim/aktifkan "${order.itemName}" ke pemesan secara manual (bisa lewat Customer Service).` };
+    }
     if (order.type === 'bot') {
       const bot = createBotFromOrder(order);
-      return { ok: true, note: `✅ Dikonfirmasi. Bot "${bot.name}" aktif ${order.durationDays} hari. PIN aktivasi: ${bot.pin} (user sudah bisa lihat di app).` };
+      return { ok: true, note: `✅ Dikonfirmasi. Bot \"${bot.name}\" aktif ${order.durationDays} hari. User tinggal buka menu Sewa Bot lalu Pasang Sender (nomor WhatsApp-nya sendiri).` };
     }
     if (order.type === 'antimaling') {
       const dev = createAmDeviceFromOrder(order);
@@ -1214,6 +1241,54 @@ registerGlobalChat(app, { middleware: requireAuth, authUser: (req) => req.user }
 
 /* Customer Service: bot topik bantuan + Live Admin */
 registerSupport(app, { middleware: requireAuth, authUser: (req) => req.user });
+
+/* ---------------------------------------------------------- */
+/* Shop = jual TITEL. Tiap titel punya harga & keuntungan sendiri.  */
+/* Titel dipasang di akun (roleBadge) dan otomatis tampil di        */
+/* Global Chat. Owner bisa ubah harga/nama dari /admin (tab Shop);  */
+/* keuntungan & tingkat ditentukan TITLE_META di bawah ini.         */
+/* Titel Co-Admin/Admin hanya label, TIDAK memberi akses admin.     */
+/* ---------------------------------------------------------- */
+const PLAN_RANK = { free: 0, basic: 1, pro: 2, owner: 3 };
+const TITLE_META = {
+  'PREMIUM':  { rank: 1, grantPlan: 'basic', perks: ['Download, enhance & convert tanpa batas', 'AI 100x per hari', 'Bisa publish website', 'Titel PREMIUM di Global Chat'] },
+  'VIP':      { rank: 2, grantPlan: 'pro',   perks: ['Semua keuntungan Premium', 'AI tanpa batas', 'Mahkota 👑 + titel VIP di Global Chat'] },
+  'RESELLER': { rank: 3, grantPlan: 'pro',   perks: ['Semua keuntungan VIP', 'Titel RESELLER di Global Chat'] },
+  'CO-ADMIN': { rank: 4, grantPlan: 'pro',   perks: ['Semua keuntungan Reseller', 'Titel CO-ADMIN di Global Chat'] },
+  'ADMIN':    { rank: 5, grantPlan: 'pro',   perks: ['Semua keuntungan Co-Admin', 'Titel ADMIN di Global Chat'] },
+};
+const DEFAULT_TITLES = [
+  { id: 'title-premium',  name: 'Titel Premium',  icon: '💎', desc: 'Fitur tanpa batas + titel Premium di chat.', price: 39000,  kind: 'role', roleBadge: 'PREMIUM',  note: 'Titel PREMIUM aktif, selamat!', active: true },
+  { id: 'title-vip',      name: 'Titel VIP',      icon: '👑', desc: 'AI tanpa batas + titel VIP di chat.',        price: 79000,  kind: 'role', roleBadge: 'VIP',      note: 'Titel VIP aktif, selamat!', active: true },
+  { id: 'title-reseller', name: 'Titel Reseller', icon: '🤝', desc: 'Titel Reseller + semua fitur VIP.',          price: 149000, kind: 'role', roleBadge: 'RESELLER', note: 'Titel RESELLER aktif, selamat!', active: true },
+  { id: 'title-coadmin',  name: 'Titel Co-Admin', icon: '🛡️', desc: 'Titel Co-Admin + semua fitur Reseller.',     price: 299000, kind: 'role', roleBadge: 'CO-ADMIN', note: 'Titel CO-ADMIN aktif, selamat!', active: true },
+  { id: 'title-admin',    name: 'Titel Admin',    icon: '⚡', desc: 'Titel tertinggi + semua fitur Co-Admin.',    price: 499000, kind: 'role', roleBadge: 'ADMIN',    note: 'Titel ADMIN aktif, selamat!', active: true },
+];
+function getShopTitles() {
+  const raw = db.getSettings().shopItems;
+  const base = Array.isArray(raw) && raw.length ? raw : DEFAULT_TITLES; // kalau Owner sudah simpan daftar sendiri, itu yang dipakai
+  return base
+    .filter(i => i && i.active !== false && i.kind === 'role' && i.roleBadge && Number(i.price) > 0)
+    .map(i => {
+      const m = TITLE_META[String(i.roleBadge).toUpperCase()] || {};
+      return { ...i, price: Number(i.price), rank: m.rank || 1, grantPlan: m.grantPlan || '', perks: m.perks || [] };
+    })
+    .sort((a, b) => a.rank - b.rank || a.price - b.price);
+}
+function titleRankOf(badge) {
+  const m = TITLE_META[String(badge || '').toUpperCase()];
+  return m ? m.rank : 0;
+}
+// Katalog Shop untuk aplikasi: hanya titel (tanpa produk bawaan).
+app.get('/api/shop/items', (req, res) => {
+  res.json({ builtin: [], custom: getShopTitles().map(({ id, name, icon, desc, price, kind, roleBadge, rank, perks }) => ({ id, name, icon, desc, price, kind, roleBadge, rank, perks })) });
+});
+
+/* AllTools Shop: katalog produk bawaan + item buatan Owner */
+registerShop(app, { db, requireAuth, requireOwner, getPlanPrices, getBotPrices, getAmPrice, getPulsaProducts });
+
+/* Sender WhatsApp per bot sewaan (pairing code, semua fitur bot) */
+registerBotSender(app, { db, requireAuth, askAI: askGemini });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });
