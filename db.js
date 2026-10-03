@@ -254,10 +254,10 @@ function getAmLocationsForDevice(deviceId, limit = 100) {
 /* Mode maintenance (diatur Owner lewat /admin) */
 function getMaintenance() {
   const m = readDb().settings.maintenance || {};
-  return { on: !!m.on, message: m.message || '' };
+  return { on: !!m.on, message: m.message || '', link: m.link || '' };
 }
-function setMaintenance(on, message) {
-  return updateSettings({ maintenance: { on: !!on, message: String(message || '').slice(0, 300) } });
+function setMaintenance(on, message, link) {
+  return updateSettings({ maintenance: { on: !!on, message: String(message || '').slice(0, 300), link: String(link || '').slice(0, 300) } });
 }
 
 /* Dipakai halaman /admin (Cek Device) */

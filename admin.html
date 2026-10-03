@@ -189,6 +189,9 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       </div>
       <label>Pesan untuk user</label>
       <textarea id="mt-msg" rows="3" maxlength="300" placeholder="Contoh: Sedang maintenance, kembali lagi jam 20.00 ya."></textarea>
+      <label>Link saluran WhatsApp (opsional)</label>
+      <input type="text" id="mt-link" inputmode="url" placeholder="https://whatsapp.com/channel/xxxxxxxx">
+      <div class="small">Kalau diisi, muncul tombol "Join saluran WhatsApp" di layar maintenance.</div>
       <button class="full danger" id="mt-btn-on" onclick="saveMaint(true)">Tutup app (aktifkan maintenance)</button>
       <button class="full ok" id="mt-btn-off" onclick="saveMaint(false)">Buka app (matikan maintenance)</button>
       <div class="msg" id="mt-note"></div>
@@ -265,12 +268,13 @@ async function loadMaint(){
     st.textContent=d.on?'APP DITUTUP (maintenance aktif)':'APP TERBUKA';
     st.style.background=d.on?'var(--danger)':'var(--ok)';
     if(d.message) $('mt-msg').value=d.message;
+    if(d.link) $('mt-link').value=d.link;
   }catch(e){ say('mt-note','Gagal memuat: '+e.message); }
 }
 async function saveMaint(on){
   if(on && !confirm('Tutup app untuk semua user biasa?')) return;
   try{
-    await api('/api/admin/maintenance',{method:'PUT',body:JSON.stringify({on:on,message:$('mt-msg').value.trim()})});
+    await api('/api/admin/maintenance',{method:'PUT',body:JSON.stringify({on:on,message:$('mt-msg').value.trim(),link:$('mt-link').value.trim()})});
     say('mt-note',on?'App ditutup.':'App dibuka lagi.',true);
     loadMaint();
   }catch(e){ say('mt-note',e.message); }

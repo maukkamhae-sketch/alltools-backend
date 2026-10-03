@@ -46,7 +46,7 @@ app.use('/api', (req, res, next) => {
       if (u && u.plan === 'owner') return next(); // Owner tidak pernah diblokir
     }
   } catch (e) {}
-  res.status(503).json({ maintenance: true, error: m.message || 'Sedang maintenance. Silakan kembali lagi nanti.' });
+  res.status(503).json({ maintenance: true, error: m.message || 'Sedang maintenance. Silakan kembali lagi nanti.', link: m.link });
 });
 
 // Rate limiter ringan tanpa dependency tambahan: batasi tiap apiKey/IP
@@ -695,8 +695,10 @@ app.get('/admin', (req, res) => {
 });
 
 app.put('/api/admin/maintenance', requireOwner, (req, res) => {
-  const { on, message } = req.body || {};
-  db.setMaintenance(on, message);
+  const { on, message, link } = req.body || {};
+  const cleanLink = /^https:\/\/\S+$/.test(String(link || '').trim()) ? String(link).trim() : '';
+  if (link && !cleanLink) return res.status(400).json({ error: 'Link harus diawali https://' });
+  db.setMaintenance(on, message, cleanLink);
   res.json({ ok: true });
 });
 
