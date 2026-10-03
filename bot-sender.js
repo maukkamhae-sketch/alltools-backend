@@ -294,6 +294,36 @@ function menuText(meta) {
   return L.join('\n');
 }
 
+/* Menu bergambar: foto menu.jpg (taruh di folder yang sama dengan bot-sender.js)
+   dikirim sebagai gambar dengan teks menu sebagai caption. Kalau file foto tidak
+   ada atau gagal terkirim, otomatis kembali ke menu teks biasa. */
+const MENU_IMG = path.join(__dirname, 'menu.jpg');
+const CAPTION_MAX = 1000; // caption gambar WhatsApp dijaga pendek; kalau menu lebih panjang, teks dikirim terpisah
+let menuImgBuf = null;
+function getMenuImage() {
+  if (menuImgBuf) return menuImgBuf;
+  try { menuImgBuf = fs.readFileSync(MENU_IMG); } catch (e) { menuImgBuf = null; }
+  return menuImgBuf;
+}
+async function sendMenu(ctx, jid, quoted) {
+  const text = menuText(ctx.meta);
+  const img = getMenuImage();
+  if (img) {
+    try {
+      if (text.length <= CAPTION_MAX) {
+        await send(ctx, jid, { image: img, mimetype: 'image/jpeg', caption: text }, quoted);
+        return;
+      }
+      await send(ctx, jid, { image: img, mimetype: 'image/jpeg', caption: '*' + clip(ctx.meta.name, 80) + '*' }, quoted);
+      await send(ctx, jid, { text: clip(text, 3500) });
+      return;
+    } catch (e) {
+      console.error('[bot ' + ctx.meta.id + '] gagal kirim gambar menu:', e.message);
+    }
+  }
+  await send(ctx, jid, { text: clip(text, 3500) }, quoted);
+}
+
 async function onMessage(ctx, m) {
   const { meta, sock } = ctx;
   if (!m || !m.message || !m.key) return;
@@ -350,7 +380,7 @@ async function onMessage(ctx, m) {
     const cmd = (parts.shift() || '').toLowerCase();
     const rest = parts.join(' ').trim();
 
-    if (cmd === 'menu' || cmd === 'help') return reply(menuText(meta));
+    if (['menu', 'help', 'start', 'star'].includes(cmd)) return sendMenu(ctx, jid, m);
     if (cmd === 'ping') return reply('Pong! 🏓 Bot aktif.');
 
     if ((cmd === 'katalog' || cmd === 'produk') && has('catalog')) {
@@ -746,4 +776,4 @@ function registerBotSender(app, opts) {
   }, 15000).unref();
 }
 
-module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText, findMedia, makeBrat, imageToSticker } };
+module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText, sendMenu, findMedia, makeBrat, imageToSticker } };
