@@ -571,7 +571,11 @@ function syncMeta(bot) {
 async function startSocket(meta, pairPhone) {
   let baileys, pino;
   try { baileys = require('@whiskeysockets/baileys'); pino = require('pino'); }
-  catch (e) { throw new Error('Library Baileys belum terpasang di server (npm i @whiskeysockets/baileys pino).'); }
+  catch (e) {
+    console.error('[bot-sender] gagal memuat Baileys/pino:', e && e.code, e && e.message);
+    const miss = e && e.code === 'MODULE_NOT_FOUND';
+    throw new Error((miss ? 'Library Baileys belum terpasang di server (npm i @whiskeysockets/baileys pino).' : 'Library Baileys gagal dimuat di server.') + ' Detail: ' + String((e && e.message) || e).split('\n')[0].slice(0, 200));
+  }
   const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, makeCacheableSignalKeyStore } = baileys;
 
   const old = runtimes.get(meta.id);
