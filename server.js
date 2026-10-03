@@ -11,6 +11,7 @@ const { registerGlobalChat } = require('./global-chat-backend');
 const { registerSupport } = require('./support-backend');
 const { registerShop } = require('./shop-backend');
 const { registerBotSender } = require('./bot-sender');
+const { registerStatusMusic } = require('./status-music-backend');
 
 const app = express();
 // CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
@@ -1324,6 +1325,9 @@ app.delete('/api/admin/inbox/:id', requireOwner, (req, res) => {
 
 /* Sender WhatsApp per bot sewaan (pairing code, semua fitur bot) */
 registerBotSender(app, { db, requireAuth, askAI: askGemini });
+
+/* Status 24 jam + musik Spotify */
+registerStatusMusic(app, { db, requireAuth });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });
