@@ -12,6 +12,7 @@ const { registerSupport } = require('./support-backend');
 const { registerShop } = require('./shop-backend');
 const { registerBotSender } = require('./bot-sender');
 const { registerStatusMusic } = require('./status-music-backend');
+const { registerPush } = require('./push-backend');
 
 const app = express();
 // CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
@@ -395,6 +396,9 @@ function getBotPrices() {
 function getAmPrice() {
   return db.getSettings().amPrice || 49000; // sekali bayar, per HP, berlaku selamanya
 }
+function getAmApkUrl() {
+  return String(db.getSettings().amApkUrl || ''); // link download apk AntiMaling (diisi Owner dari /admin)
+}
 function getDanaNumber() {
   return db.getSettings().dana || PAYMENT_DANA_NUMBER;
 }
@@ -405,6 +409,15 @@ app.get('/api/bots/prices', (req, res) => {
 
 app.get('/api/antimaling/price', (req, res) => {
   res.json({ price: getAmPrice() });
+});
+
+// Link download apk: hanya untuk akun yang sudah punya proteksi AntiMaling
+// (pembayaran sudah dikonfirmasi, jadi HP-nya sudah terdaftar) atau Owner.
+app.get('/api/antimaling/apk', requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const has = req.user.plan === 'owner' || db.getAmDevicesForUser(req.user.id).length > 0;
+  if (!has) return res.status(403).json({ error: 'Link apk tersedia setelah pembelian proteksi dikonfirmasi.' });
+  res.json({ url: getAmApkUrl() });
 });
 
 app.get('/api/bots/mine', requireAuth, (req, res) => {
@@ -752,11 +765,11 @@ app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
 });
 
 app.get('/api/admin/config', requireOwner, (req, res) => {
-  res.json({ products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), dana: getDanaNumber() });
+  res.json({ products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
 });
 
 app.put('/api/admin/config', requireOwner, (req, res) => {
-  const { products, planPrices, botPrices, botNumber, amPrice, dana } = req.body || {};
+  const { products, planPrices, botPrices, botNumber, amPrice, amApkUrl, dana } = req.body || {};
   const toInt = v => Math.round(Number(v));
   const patch = {};
 
@@ -811,6 +824,14 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
     patch.amPrice = p;
   }
 
+  if (amApkUrl !== undefined) {
+    const u = String(amApkUrl).trim();
+    if (u && (!/^https:\/\/[^\s]+$/.test(u) || u.length > 500)) {
+      return res.status(400).json({ error: 'Link apk harus diawali https:// dan tanpa spasi.' });
+    }
+    patch.amApkUrl = u; // kosong = hapus link
+  }
+
   if (dana !== undefined) {
     const d = String(dana).replace(/[^0-9]/g, '');
     if (d.length < 8) return res.status(400).json({ error: 'Nomor DANA tidak valid.' });
@@ -818,7 +839,7 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
   }
 
   db.updateSettings(patch);
-  res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), dana: getDanaNumber() });
+  res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
 });
 
 app.get('/api/admin/orders', requireOwner, (req, res) => {
@@ -1328,6 +1349,9 @@ registerBotSender(app, { db, requireAuth, askAI: askGemini });
 
 /* Status 24 jam + musik Spotify */
 registerStatusMusic(app, { db, requireAuth });
+
+/* Notifikasi push (promo/diskon dari Owner) */
+registerPush(app, { db, requireAuth, requireOwner });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });

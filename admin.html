@@ -145,7 +145,24 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
     <button id="t-inbox" onclick="tab('inbox')">Inbox</button>
     <button id="t-bantuan" onclick="tab('bantuan')">Bantuan<span id="sp-dot" class="badge" style="background:var(--danger);margin-left:6px;display:none"></span></button>
+    <button id="t-push" onclick="tab('push')">Notifikasi</button>
   </div>
+
+  <section id="s-push" class="hide">
+    <div class="card">
+      <b>Kirim notifikasi promo/diskon</b>
+      <div class="small" style="margin:4px 0 10px">Terkirim ke semua pengguna yang sudah mengaktifkan notifikasi di app. Tidak bisa dibatalkan setelah dikirim.</div>
+      <label>Judul</label>
+      <input type="text" id="pu-title" maxlength="80" placeholder="Contoh: Diskon 12.12">
+      <label>Isi pesan</label>
+      <input type="text" id="pu-body" maxlength="200" placeholder="Contoh: Premium Pro diskon 50% hari ini saja!">
+      <label>Link tujuan saat diketuk (opsional, https://...)</label>
+      <input type="text" id="pu-url" placeholder="https://alltools-neon.vercel.app">
+      <button class="full" onclick="pushSend()">Kirim sekarang</button>
+      <div class="msg" id="pu-msg"></div>
+      <div class="small" id="pu-count" style="margin-top:10px"></div>
+    </div>
+  </section>
 
   <section id="s-debug" class="hide">
     <div class="small" style="margin-bottom:8px;">Semua device AntiMaling di server, apapun akunnya — buat mengecek kalau device tidak muncul di app.</div>
@@ -182,6 +199,9 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       <b>Harga proteksi AntiMaling</b>
       <label>Sekali bayar per HP (Rp)</label>
       <input type="number" id="am-price" inputmode="numeric">
+      <label>Link download apk AntiMaling (https://...)</label>
+      <input type="text" id="am-apk" inputmode="url" placeholder="https://github.com/.../releases/download/.../antimaling.apk">
+      <div class="small">Tombol "Download APK" muncul di app untuk pembeli yang pembayarannya sudah dikonfirmasi. Kosongkan untuk menghapus link.</div>
     </div>
     <div class="card">
       <b>Nomor DANA</b>
@@ -290,7 +310,7 @@ async function start(){
   try{
     const c=await api('/api/admin/config');
     products=c.products;
-    $('pr-basic').value=c.planPrices.basic; $('pr-pro').value=c.planPrices.pro; $('bp-week').value=c.botPrices.week; $('bp-month').value=c.botPrices.month; $('bot-number').value=c.botNumber; $('am-price').value=c.amPrice; $('dana').value=c.dana;
+    $('pr-basic').value=c.planPrices.basic; $('pr-pro').value=c.planPrices.pro; $('bp-week').value=c.botPrices.week; $('bp-month').value=c.botPrices.month; $('bot-number').value=c.botNumber; $('am-price').value=c.amPrice; $('am-apk').value=c.amApkUrl||''; $('dana').value=c.dana;
     $('login').classList.add('hide'); $('app').classList.remove('hide'); $('logout').classList.remove('hide');
     renderProducts();
     mpInit();
@@ -303,7 +323,7 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan']){
+  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan','push']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
@@ -312,6 +332,24 @@ function tab(name){
   if(name==='maint') loadMaint();
   if(name==='bantuan') loadSupport();
   if(name==='inbox') loadInboxAdmin();
+  if(name==='push') loadPushCount();
+}
+
+/* ---------- notifikasi push ---------- */
+async function loadPushCount(){
+  try{ const d=await api('/api/admin/push/count'); $('pu-count').textContent=d.count+' pengguna sudah mengaktifkan notifikasi.'; }
+  catch(e){ $('pu-count').textContent=''; }
+}
+async function pushSend(){
+  const title=$('pu-title').value.trim(), body=$('pu-body').value.trim(), url=$('pu-url').value.trim();
+  if(!title||!body){ say('pu-msg','Judul dan isi wajib diisi.'); return; }
+  if(!confirm('Kirim notifikasi ini ke semua pengguna sekarang?')) return;
+  try{
+    const d=await api('/api/admin/push/send',{method:'POST',body:JSON.stringify({title,body,url})});
+    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' pengguna.',true);
+    $('pu-title').value=''; $('pu-body').value=''; $('pu-url').value='';
+    loadPushCount();
+  }catch(e){ say('pu-msg',e.message); }
 }
 
 async function loadInboxAdmin(){
@@ -476,7 +514,7 @@ async function saveProducts(){
 /* ---------- harga premium & dana ---------- */
 async function saveHarga(){
   try{
-    await api('/api/admin/config',{method:'PUT',body:JSON.stringify({planPrices:{basic:$('pr-basic').value,pro:$('pr-pro').value},botPrices:{week:$('bp-week').value,month:$('bp-month').value},botNumber:$('bot-number').value,amPrice:$('am-price').value,dana:$('dana').value})});
+    await api('/api/admin/config',{method:'PUT',body:JSON.stringify({planPrices:{basic:$('pr-basic').value,pro:$('pr-pro').value},botPrices:{week:$('bp-week').value,month:$('bp-month').value},botNumber:$('bot-number').value,amPrice:$('am-price').value,amApkUrl:$('am-apk').value,dana:$('dana').value})});
     say('h-msg','Tersimpan. Langsung berlaku di app.',true);
   }catch(e){ say('h-msg',e.message); }
 }
