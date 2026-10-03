@@ -253,8 +253,30 @@ async function makeBrat(text) {
   return sharp(Buffer.from(svg)).webp({ quality: 90 }).toBuffer();
 }
 
+/* Baileys versi baru berupa ES Module, yang tidak bisa dimuat dengan require().
+   import() dinamis bisa memuat ES Module maupun CommonJS, lalu bentuknya diseragamkan. */
+let baileysMod = null;
+async function loadBaileys() {
+  if (baileysMod) return baileysMod;
+  const ns = await import('@whiskeysockets/baileys');
+  const d = ns.default;
+  const pick = k => (ns[k] !== undefined ? ns[k] : (d && d[k]));
+  const makeWASocket = typeof d === 'function' ? d : ((d && typeof d.default === 'function') ? d.default : ns.makeWASocket);
+  if (typeof makeWASocket !== 'function') throw new Error('bentuk export Baileys tidak dikenali');
+  baileysMod = {
+    makeWASocket,
+    useMultiFileAuthState: pick('useMultiFileAuthState'),
+    DisconnectReason: pick('DisconnectReason'),
+    fetchLatestBaileysVersion: pick('fetchLatestBaileysVersion'),
+    Browsers: pick('Browsers'),
+    makeCacheableSignalKeyStore: pick('makeCacheableSignalKeyStore'),
+    downloadMediaMessage: pick('downloadMediaMessage'),
+  };
+  return baileysMod;
+}
+
 async function fetchMediaBuffer(ctx, media) {
-  const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+  const { downloadMediaMessage } = await loadBaileys();
   return downloadMediaMessage(media.msg, 'buffer', {}, { logger: require('pino')({ level: 'silent' }), reuploadRequest: ctx.sock.updateMediaMessage });
 }
 
@@ -600,13 +622,13 @@ function syncMeta(bot) {
 
 async function startSocket(meta, pairPhone) {
   let baileys, pino;
-  try { baileys = require('@whiskeysockets/baileys'); pino = require('pino'); }
+  try { baileys = await loadBaileys(); pino = require('pino'); }
   catch (e) {
     console.error('[bot-sender] gagal memuat Baileys/pino:', e && e.code, e && e.message);
-    const miss = e && e.code === 'MODULE_NOT_FOUND';
+    const miss = e && (e.code === 'MODULE_NOT_FOUND' || e.code === 'ERR_MODULE_NOT_FOUND');
     throw new Error((miss ? 'Library Baileys belum terpasang di server (npm i @whiskeysockets/baileys pino).' : 'Library Baileys gagal dimuat di server.') + ' Detail: ' + String((e && e.message) || e).split('\n')[0].slice(0, 200));
   }
-  const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, makeCacheableSignalKeyStore } = baileys;
+  const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, makeCacheableSignalKeyStore } = baileys;
 
   const old = runtimes.get(meta.id);
   if (old) { old.stopped = true; try { old.sock.end(undefined); } catch (e) {} }
@@ -776,4 +798,4 @@ function registerBotSender(app, opts) {
   }, 15000).unref();
 }
 
-module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText, sendMenu, findMedia, makeBrat, imageToSticker } };
+module.exports = { registerBotSender, __test: { onMessage, onGroupUpdate, cleanConfig, defaultConfig, defaultData, parseDuration, findFaq, isSafeUrl, getText, menuText, sendMenu, loadBaileys, findMedia, makeBrat, imageToSticker } };
