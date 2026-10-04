@@ -3,8 +3,8 @@
  *
  * Pemilik bot (login):
  *   GET  /api/bots/:id/sender        status sender + config (Personal atau Global)
- *   GET  /api/bots/servers           daftar Server 1-3 + status (active/full/offline)
- *   POST /api/bots/:id/sender/pair   {phone, server:'auto'|1|2|3} -> {code}   (Personal saja)
+ *   GET  /api/bots/servers           daftar Server 1-5 + status (active/full/offline)
+ *   POST /api/bots/:id/sender/pair   {method:'code'|'qr', phone (wajib utk code), server:'auto'|1..5} -> {code} atau {qr}   (Personal saja)
  *   POST /api/bots/:id/sender/stop   lepas sender        (Personal saja)
  *   PUT  /api/bots/:id/config        simpan pengaturan fitur
  * Owner aplikasi:
@@ -30,12 +30,12 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
   const isGlobal = bot => bot.senderMode === 'global';
   const GLOBAL_MSG = 'Bot Sender Global memakai nomor pusat, jadi tidak perlu pasang atau lepas sender. Pakai .daftar <PIN> lalu .pasang di grup.';
 
-  /* Server 1-3 (kalau WORKER_URLS diisi): daftar + status active / full / offline untuk layar pasang sender. */
+  /* Server 1-5 (kalau WORKER_URLS diisi): daftar + status active / full / offline untuk layar pasang sender. */
   app.get('/api/bots/servers', requireAuth, async (req, res) => {
     try { res.json({ servers: await worker.serverList() }); } catch (e) { res.json({ servers: [] }); }
   });
 
-  /* Status sender yang dipasang di server sender (1-3). Kalau servernya mati, balas status server_offline. */
+  /* Status sender yang dipasang di server sender (1-5). Kalau servernya mati, balas status server_offline. */
   async function remoteState(bot, meta) {
     const n = meta.server;
     try {
@@ -65,9 +65,10 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
     if (isGlobal(bot)) return res.status(400).json({ error: GLOBAL_MSG });
     const meta = getMeta(bot);
     if (new Date(meta.expiresAt).getTime() <= Date.now()) return res.status(403).json({ error: 'Masa sewa bot sudah habis.' });
-    const phone = String((req.body && req.body.phone) || '').replace(/\D/g, '');
-    if (phone.length < 9 || phone.length > 15 || phone.startsWith('0')) return res.status(400).json({ error: 'Nomor harus format internasional tanpa 0 di depan, contoh 6281234567890.' });
-    if (personal.phoneInUse(phone, bot.id) || phone === global.getState().phone || allMetas().some(m => m.id !== bot.id && m.server >= 1 && m.phone === phone && !isExpired(m))) return res.status(400).json({ error: 'Nomor ini sudah dipakai bot lain.' });
+    const method = req.body && req.body.method === 'qr' ? 'qr' : 'code';
+    const phone = method === 'qr' ? '' : String((req.body && req.body.phone) || '').replace(/\D/g, '');
+    if (method === 'code' && (phone.length < 9 || phone.length > 15 || phone.startsWith('0'))) return res.status(400).json({ error: 'Nomor harus format internasional tanpa 0 di depan, contoh 6281234567890.' });
+    if (method === 'code' && (personal.phoneInUse(phone, bot.id) || phone === global.getState().phone || allMetas().some(m => m.id !== bot.id && m.server >= 1 && m.phone === phone && !isExpired(m)))) return res.status(400).json({ error: 'Nomor ini sudah dipakai bot lain.' });
 
     // sudah terhubung? (di server utama atau di server sender)
     const oldN = worker.workerOf(meta);
@@ -87,14 +88,14 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
       }
       if (target.n) {
         if (cur) personal.stop(bot.id, false);
-        const d = await worker.callWorker(target.n, 'POST', '/w/pair', { bot: worker.snap(bot), phone, config: meta.config }, 45000);
+        const d = await worker.callWorker(target.n, 'POST', '/w/pair', { bot: worker.snap(bot), phone, method, config: meta.config }, 45000);
         meta.server = target.n; writeMeta(meta);
-        return res.json({ code: d.code, server: target.n });
+        return res.json({ code: d.code, qr: d.qr, server: target.n });
       }
       meta.server = 0; writeMeta(meta);
       fs.rmSync(path.join(dirOf(bot.id), 'auth'), { recursive: true, force: true }); // mulai sesi bersih untuk pairing baru
-      const ctx = await personal.start(meta, phone);
-      res.json({ code: ctx.code, server: 0 });
+      const ctx = await personal.start(meta, method === 'qr' ? undefined : phone, method === 'qr' ? 4 : undefined);
+      res.json({ code: ctx.code, qr: ctx.qr, server: 0 });
     } catch (e) {
       if (!target.n) personal.stop(bot.id, false);
       res.status(e.offline ? 503 : (e.status || 500)).json({ error: e.message || 'Gagal meminta kode pairing.' });

@@ -1,13 +1,13 @@
 /**
- * Multi-server sender (Server 1-3).
+ * Multi-server sender (Server 1-5).
  *
- * Server utama menyimpan akun, database, dan pembayaran. Server 1-3 adalah deploy lain dari
+ * Server utama menyimpan akun, database, dan pembayaran. Server 1-5 adalah deploy lain dari
  * kode yang SAMA yang hanya menjalankan koneksi WhatsApp sender Personal. Server utama
  * meneruskan perintah pasang / lepas / atur ke server yang dipilih user.
  *
  * Env:
  *   WORKER_SECRET   kode rahasia yang sama di server utama dan semua server sender (wajib).
- *   WORKER_URLS     hanya di server utama: url server 1,2,3 dipisah koma (maks 3), contoh
+ *   WORKER_URLS     hanya di server utama: url server 1,2,3,4,5 dipisah koma (maks 5), contoh
  *                   https://s1.up.railway.app,https://s2.up.railway.app,https://s3.up.railway.app
  *   BOT_MAX_SESSIONS  kapasitas sender per server (default 20).
  *
@@ -24,7 +24,7 @@ const personal = require('./personal');
 const shared = require('./shared');
 
 const SECRET = () => String(process.env.WORKER_SECRET || '');
-const URLS = () => (SECRET() ? String(process.env.WORKER_URLS || '').split(',').map(s => s.trim().replace(/\/+$/, '')).filter(Boolean).slice(0, 3) : []);
+const URLS = () => (SECRET() ? String(process.env.WORKER_URLS || '').split(',').map(s => s.trim().replace(/\/+$/, '')).filter(Boolean).slice(0, 5) : []);
 const httpErr = (status, message) => Object.assign(new Error(message), { status });
 const workerOf = meta => (Number.isInteger(meta && meta.server) && meta.server >= 1 ? meta.server : 0);
 
@@ -57,16 +57,17 @@ function registerWorkerRoutes(app) {
     const meta = getMeta(bot);
     if (req.body.config) meta.config = cleanConfig(req.body.config, meta.config);
     if (isExpired(meta)) return res.status(403).json({ error: 'Masa sewa bot sudah habis.' });
-    const phone = String(req.body.phone || '').replace(/\D/g, '');
-    if (phone.length < 9 || phone.length > 15 || phone.startsWith('0')) return res.status(400).json({ error: 'Nomor harus format internasional tanpa 0 di depan, contoh 6281234567890.' });
-    if (personal.phoneInUse(phone, bot.id)) return res.status(400).json({ error: 'Nomor ini sudah dipakai bot lain.' });
+    const method = req.body.method === 'qr' ? 'qr' : 'code';
+    const phone = method === 'qr' ? '' : String(req.body.phone || '').replace(/\D/g, '');
+    if (method === 'code' && (phone.length < 9 || phone.length > 15 || phone.startsWith('0'))) return res.status(400).json({ error: 'Nomor harus format internasional tanpa 0 di depan, contoh 6281234567890.' });
+    if (method === 'code' && personal.phoneInUse(phone, bot.id)) return res.status(400).json({ error: 'Nomor ini sudah dipakai bot lain.' });
     const cur = personal.runtimeOf(bot.id);
     if (cur && cur.status === 'connected') return res.status(400).json({ error: 'Sender sudah terhubung. Lepas dulu kalau mau ganti nomor.' });
     if (!cur && personal.activeCount() >= MAX_SESSIONS) return res.status(503).json({ error: 'Server ini penuh.', full: true });
     try {
       fs.rmSync(path.join(dirOf(bot.id), 'auth'), { recursive: true, force: true });
-      const ctx = await personal.start(meta, phone);
-      res.json({ code: ctx.code });
+      const ctx = await personal.start(meta, method === 'qr' ? undefined : phone, method === 'qr' ? 4 : undefined);
+      res.json({ code: ctx.code, qr: ctx.qr });
     } catch (e) {
       personal.stop(bot.id, false);
       res.status(500).json({ error: e.message || 'Gagal meminta kode pairing.' });

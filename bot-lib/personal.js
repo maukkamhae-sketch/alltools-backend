@@ -12,13 +12,13 @@ const { newRuntime, connect, stopSocket } = require('./session');
 const runtimes = new Map(); // botId -> runtime
 const digitsOf = require('./util').digits;
 
-async function start(meta, pairPhone) {
+async function start(meta, pairPhone, qrLeft) {
   const old = runtimes.get(meta.id);
   if (old) { old.stopped = true; try { old.sock.end(undefined); } catch (e) {} }
 
   return connect({
     authDir: path.join(dirOf(meta.id), 'auth'),
-    pairPhone,
+    pairPhone, qrLeft,
     makeRuntime: sock => {
       const rt = newRuntime(sock, { meta, save: saverOf(meta) });
       runtimes.set(meta.id, rt);
@@ -28,7 +28,7 @@ async function start(meta, pairPhone) {
     onOpen: rt => { meta.phone = digitsOf(rt.sock.user && rt.sock.user.id); writeMeta(meta); },
     onLoggedOut: () => { meta.phone = ''; writeMeta(meta); runtimes.delete(meta.id); },
     isDead: () => isExpired(meta),
-    reconnect: () => start(meta),
+    reconnect: (c, unreg) => start(meta, undefined, typeof qrLeft === 'number' && unreg ? qrLeft - 1 : undefined),
   });
 }
 
@@ -45,7 +45,7 @@ function publicState(meta) {
   return {
     mode: 'personal',
     status: isExpired(meta) ? 'expired' : (rt ? rt.status : (meta.phone ? 'connecting' : 'idle')),
-    phone: meta.phone || '', code: rt && rt.status === 'pairing' ? rt.code : '', error: rt ? rt.err : '',
+    phone: meta.phone || '', code: rt && rt.status === 'pairing' ? rt.code : '', qr: rt && rt.status === 'pairing' ? (rt.qr || '') : '', error: rt ? rt.err : '',
     features: meta.features, config: meta.config, orders: (meta.data.orders || []).slice(-20).reverse(),
     stats: { contacts: meta.data.contacts.length, reminders: meta.data.reminders.length, orders: meta.data.orders.length },
   };
