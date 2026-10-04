@@ -694,8 +694,16 @@ body.premium .status-card .sc-avatar{box-shadow:0 0 0 3px var(--pa),0 0 16px var
         <button class="back-btn" onclick="showPage('home')">&#8592;</button>
         <h2>Sewa Bot WhatsApp</h2>
       </div>
+      <div id="bot-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
+      <div id="gs-status"></div>
       <div class="card">
-        <label class="field-label">Nama bot</label>
+        <div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700">SENDER SOURCE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px">
+          <button type="button" id="src-personal" onclick="botSetMode('personal')" style="padding:14px 8px;border-radius:14px;font-weight:800;font-size:13px;letter-spacing:.06em;cursor:pointer">👤<br>PERSONAL</button>
+          <button type="button" id="src-global" onclick="botSetMode('global')" style="padding:14px 8px;border-radius:14px;font-weight:800;font-size:13px;letter-spacing:.06em;cursor:pointer">🔒<br>GLOBAL</button>
+        </div>
+        <div class="note" id="src-note" style="margin-bottom:6px"></div>
+        <label class="field-label" style="margin-top:10px">Nama bot</label>
         <input type="text" id="bot-name" placeholder="contoh: Bot Toko Baju">
         <label class="field-label" style="margin-top:14px;">Pilih fitur</label>
         <div id="bot-features-list" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;"></div>
@@ -1481,14 +1489,16 @@ const BOT_FEATURE_LABELS={
   antilink:'Anti-link di grup', reminder:'Reminder/absen otomatis',
   orderbot:'Deteksi & catat pesanan otomatis', faq:'Auto-jawab FAQ dari daftar tanya-jawab',
   ai:'Chat AI langsung di WhatsApp', downloader:'Download video TikTok/IG tanpa watermark',
+  sticker:'Stiker (.s dan .brat)', pushkontak:'Push Kontak (pesan pribadi ke member grup)',
 };
 function renderBotFeatureCheckboxes(){
   const box=document.getElementById('bot-features-list');
   box.innerHTML=Object.entries(BOT_FEATURE_LABELS).map(([key,label])=>`
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);">
+    <label class="bf-row" data-key="${key}" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);">
       <input type="checkbox" value="${key}" class="bot-feature-checkbox" style="width:auto;">
       ${label}
     </label>`).join('');
+  botApplyMode();
 }
 async function runRentBot(){
   const name=document.getElementById('bot-name').value.trim();
@@ -1502,7 +1512,7 @@ async function runRentBot(){
   btn.disabled=true;
   btn.innerHTML='<span class="spin"></span> Memproses...';
   try{
-    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'bot', name, features:checked, durationDays:Number(duration)})});
+    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'bot', name, features:checked, durationDays:Number(duration), senderMode:botMode})});
     document.getElementById('bot-name').value='';
     document.querySelectorAll('.bot-feature-checkbox').forEach(c=>c.checked=false);
     showManualPay(data, renderBotList, 'bot');
@@ -1558,6 +1568,16 @@ async function botSenderLoad(id){
 }
 function botSenderPaint(id,s){
   const box=document.getElementById('bs-'+id); if(!box) return;
+  if(s.mode==='global'){
+    const g=s.schedule||{}, on=!!g.online, wins=(g.windows||[]).map(w=>w.join(' - ')).join(', ');
+    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender Global · PIN bot</div>'+
+      '<div style="font-size:30px;font-weight:800;letter-spacing:5px;color:var(--amber);font-family:monospace;">'+botEh(s.pin||'-')+'</div>'+
+      '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Nomor pusat: '+(s.phone?'+'+botEh(s.phone):'belum terhubung')+' · '+(s.status==='connected'?'online ✅':'offline')+'</div>'+
+      '<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">Grup terpasang: '+(s.chats||0)+'/'+(s.maxChats||0)+' · Jam aktif '+botEh(wins)+' WIB · '+(on?'aktif ✅':'istirahat 💤')+'</div></div>'+
+      '<button class="btn" style="margin-top:8px" onclick="botOpenCfg(\''+id+'\')">⚙️ Atur Bot</button>'+
+      '<div class="note" style="margin-top:6px">'+(s.registered?'Nomormu sudah terdaftar sebagai owner. ':'')+'1) Chat pribadi ke nomor pusat: <b>.daftar '+botEh(s.pin||'PIN')+'</b> 2) Masukkan nomor pusat ke grup 3) Di grup ketik <b>.pasang</b>. Lepas dari grup: <b>.lepas</b>.</div>';
+    return;
+  }
   const phoneRow='<input type="text" inputmode="numeric" id="bp-'+id+'" placeholder="Nomor WA sender, contoh 6281234567890">';
   if(s.status==='connected'){
     box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender terhubung</div><div style="font-size:18px;font-weight:700;color:var(--accent);">+'+botEh(s.phone)+'</div>'+
@@ -1619,6 +1639,7 @@ function botOpenCfg(id){
     sec('orderbot','Deteksi pesanan','Kata pemicu dipisah koma',  '<input type="text" id="bc-ok" value="'+botEh((c.orderbot.keywords||[]).join(', '))+'"><div style="height:6px"></div>'+ta('bc-or',c.orderbot.reply||'','Balasan setelah pesanan dicatat'))+
     sec('antilink','Anti-link','', '<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="bc-kick" style="width:auto" '+(c.antilink.kick?'checked':'')+'> Keluarkan member setelah 3x kirim link (bot harus admin grup)</label>')+
     sec('ai','Kepribadian AI','Contoh: Kamu CS Toko Baju Rina, ramah, jawab singkat.',ta('bc-ai',c.aiPrompt||'',''))+
+    (s.mode==='personal'?'<label class="field-label" style="margin-top:12px"><b>Pool Sender Global</b></label><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><input type="checkbox" id="bc-pool" style="width:auto;margin-top:3px" '+(c.sharePool?'checked':'')+'> <span>Izinkan nomor sender ini dipakai acak oleh bot Sender Global untuk Push Kontak. Pesan akan keluar dari nomor WhatsApp-mu, dan kalau nomor kena banned, risikonya ke nomormu. Bisa dimatikan kapan saja.</span></label>':'')+
     '<div class="err" id="bc-err"></div><button class="btn" style="margin-top:12px" onclick="botSaveCfg(\''+id+'\')">Simpan</button>'+
     '<button class="btn secondary" style="margin-top:6px" onclick="botCloseCfg()">Tutup</button>';
   document.getElementById('bot-sheet').classList.remove('hidden');
@@ -1634,6 +1655,7 @@ async function botSaveCfg(id){
   if(has('bc-ok')) cfg.orderbot={ keywords:String(v('bc-ok')||'').split(',').map(x=>x.trim()).filter(Boolean), reply:v('bc-or') };
   if(has('bc-kick')) cfg.antilink={kick:document.getElementById('bc-kick').checked};
   if(has('bc-ai')) cfg.aiPrompt=v('bc-ai');
+  if(has('bc-pool')) cfg.sharePool=document.getElementById('bc-pool').checked;
   const er=document.getElementById('bc-err'); er.style.display='none';
   try{ const d=await api('/api/bots/'+id+'/config',{method:'PUT',body:JSON.stringify({config:cfg})}); if(botState[id]) botState[id].config=d.config; botCloseCfg(); botSenderLoad(id); }
   catch(e){ er.textContent=e.message; er.style.display='block'; }
@@ -1676,14 +1698,56 @@ async function getPlatformBotNumber(){
     return (d.settings&&d.settings.platformBotNumber)||'';
   }catch(e){ return ''; }
 }
+let botMode='personal', botInfo=null;
+const GS_OFF_ONLY=['autoreply','faq','orderbot','broadcast']; // fitur yang butuh chat pribadi pelanggan: tidak jalan di Global
+function gsMinLeft(hm){ const n=new Date(Date.now()+7*3600000), cur=n.getUTCHours()*60+n.getUTCMinutes(); const [h,m]=String(hm).split(':').map(Number); return ((h*60+(m||0))-cur+1440)%1440||1440; }
+function gsLeftTxt(min){ const h=Math.floor(min/60), m=min%60; return (h?h+'j ':'')+m+'m'; }
+function botPaintTop(){
+  const d=botInfo; if(!d) return;
+  const n=v=>Number(v||0).toLocaleString('id-ID');
+  const card=(ic,t,v)=>'<div class="card" style="padding:12px 14px;margin:0"><div style="font-size:12px;color:var(--ink-soft)">'+ic+' '+t+'</div><div style="font-size:26px;font-weight:800;margin-top:4px">'+v+'</div></div>';
+  document.getElementById('bot-stats').innerHTML=card('👥','Total users',n(d.totalUsers))+card('⚡','Senders ready',n(d.poolReady));
+  const g=d.globalStatus||{}, on=!!g.online, col=on?'#22A06B':'var(--amber)';
+  const wins=(g.windows||[]).map(w=>w.join(' - ')).join(', ');
+  const nxt=!on&&g.nextOnAt?' · next ON '+gsLeftTxt(gsMinLeft(g.nextOnAt)):'';
+  document.getElementById('gs-status').innerHTML='<div class="card" style="margin:0 0 12px;padding:12px 14px;border:1px solid '+col+'">'+
+    '<div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span>'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px;color:'+col+'">STATUS GS : '+(on?'ON':'OFF')+'</div>'+
+    '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">Slot '+(on?'ON':'OFF')+' · '+botEh(wins)+' WIB'+nxt+'</div></div>'+
+    '<button type="button" class="btn secondary" style="width:auto;padding:8px 12px;margin:0;font-weight:800;color:'+col+';border-color:'+col+'" onclick="document.getElementById(\'gs-jadwal\').classList.toggle(\'hidden\')">JADWAL</button></div>'+
+    '<div id="gs-jadwal" class="hidden note" style="margin-top:8px">Sender Global aktif pada jam: <b>'+botEh(wins)+'</b> WIB. Di luar jam itu bot hanya membalas pemberitahuan istirahat.</div></div>';
+}
+function botPaintPrices(){
+  const d=botInfo; if(!d) return;
+  const sel=document.getElementById('bot-duration'), fmt=x=>'Rp '+Number(x).toLocaleString('id-ID');
+  const keep=sel.value;
+  const opts=botMode==='global'
+    ? [[1,'1 hari',d.globalPrices.day],[7,'1 minggu (7 hari)',d.globalPrices.week],[30,'1 bulan (30 hari)',d.globalPrices.month]]
+    : [[7,'1 minggu (7 hari)',d.prices.week],[30,'1 bulan (30 hari)',d.prices.month]];
+  sel.innerHTML=opts.map(o=>'<option value="'+o[0]+'">'+o[1]+' — '+fmt(o[2])+'</option>').join('');
+  sel.value=opts.some(o=>String(o[0])===keep)?keep:'30';
+}
+function botApplyMode(){
+  const g=botMode==='global';
+  document.querySelectorAll('.bf-row').forEach(r=>{
+    const off=g&&GS_OFF_ONLY.includes(r.dataset.key);
+    r.style.display=off?'none':'flex';
+    if(off) r.querySelector('input').checked=false;
+  });
+  const pe=document.getElementById('src-personal'), ge=document.getElementById('src-global');
+  if(pe&&ge){
+    const st=(on,c)=>on?'background:color-mix(in srgb,'+c+' 18%,transparent);border:1.5px solid '+c+';color:'+c:'background:transparent;border:1.5px solid var(--line);color:var(--ink-soft)';
+    pe.style.cssText+=';'+st(!g,'var(--accent)'); ge.style.cssText+=';'+st(g,'var(--amber)');
+  }
+  const nt=document.getElementById('src-note');
+  if(nt) nt.innerHTML=g
+    ? '<b>Global:</b> pakai nomor pusat, tanpa pasang nomor sendiri. Setelah dikonfirmasi kamu dapat PIN: chat pribadi ke nomor pusat <b>.daftar &lt;PIN&gt;</b>, masukkan nomor pusat ke grup, lalu ketik <b>.pasang</b> di grup. Hanya aktif di jam slot GS. Auto-reply, FAQ, deteksi pesanan, dan broadcast tidak tersedia.'
+    : '<b>Personal:</b> bot jalan di nomor WhatsApp-mu sendiri (dipasang lewat kode pairing). Semua fitur tersedia.';
+}
+function botSetMode(m){ botMode=m; botApplyMode(); botPaintPrices(); }
 async function loadBotPrices(){
-  try{
-    const d=await api('/api/bots/prices');
-    const sel=document.getElementById('bot-duration');
-    const fmt=n=>'Rp '+Number(n).toLocaleString('id-ID');
-    sel.options[0].textContent='1 minggu (7 hari) — '+fmt(d.prices.week);
-    sel.options[1].textContent='1 bulan (30 hari) — '+fmt(d.prices.month);
-  }catch(e){}
+  try{ botInfo=await api('/api/bots/prices'); botPaintTop(); botPaintPrices(); }catch(e){}
+  botApplyMode();
 }
 function renderBotsPage(){
   loadBotPrices();
