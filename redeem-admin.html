@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Kode Redeem — AllTools Admin</title>
+<style>
+:root{--bg:#F4F3FA;--card:#fff;--ink:#1B1830;--soft:#6B6885;--line:#E4E1F0;--acc:#5B3FF5;--ok:#1E9E62;--bad:#D64545;}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding:16px;max-width:560px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:700;color:var(--soft);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fff;color:var(--ink)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.btn{background:var(--acc);color:#fff;width:100%;margin-top:14px}
+.btn:disabled{opacity:.6}
+.sm{padding:7px 10px;font-size:12px;background:#EEEAFE;color:var(--acc)}
+.sm.del{background:#FDECEC;color:var(--bad)}
+.msg{font-size:13px;margin-top:10px;display:none;padding:9px 11px;border-radius:10px}
+.msg.err{display:block;background:#FDECEC;color:var(--bad)}
+.msg.ok{display:block;background:#E5F6EE;color:var(--ok)}
+.code{font-family:ui-monospace,Menlo,monospace;font-size:17px;font-weight:800;letter-spacing:.04em}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#EEEAFE;color:var(--acc);margin-right:4px}
+.pill.off{background:#EEE;color:#777}.pill.exp{background:#FDECEC;color:var(--bad)}
+.meta{font-size:12px;color:var(--soft);margin-top:6px;line-height:1.6}
+.top{display:flex;justify-content:space-between;align-items:center}
+.hide{display:none}
+.chk{display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
+.chk label{display:flex;align-items:center;gap:5px;margin:0;font-weight:500;color:var(--ink)}
+.chk input{width:auto}
+.warn{font-size:12px;color:#9A6A00;background:#FFF6DD;border-radius:10px;padding:8px 10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div id="login" class="card hide">
+  <h1>Masuk Admin</h1>
+  <label>Email</label><input id="em" type="email" autocomplete="username">
+  <label>Password</label><input id="pw" type="password" autocomplete="current-password">
+  <div id="lerr" class="msg"></div>
+  <button class="btn" id="lbtn">Masuk</button>
+</div>
+
+<div id="app" class="hide">
+  <div class="top"><h1>Kode Redeem</h1><button class="sm" id="out">Keluar</button></div>
+
+  <div class="card">
+    <b>Buat kode baru</b>
+    <label>Jenis</label>
+    <select id="kind"><option value="discount">Diskon (dipakai saat beli)</option><option value="plan">Paket gratis (langsung aktif)</option></select>
+
+    <div id="f-discount">
+      <div class="row">
+        <div><label>Diskon persen (1–90)</label><input id="percent" type="number" inputmode="numeric" placeholder="mis. 20"></div>
+        <div><label>ATAU nominal (Rp)</label><input id="amount" type="number" inputmode="numeric" placeholder="mis. 10000"></div>
+      </div>
+      <label>Maks potongan untuk diskon persen (Rp, kosong = tanpa batas)</label>
+      <input id="maxDiscount" type="number" inputmode="numeric" placeholder="mis. 15000">
+      <label>Berlaku untuk</label>
+      <div class="chk" id="applies">
+        <label><input type="checkbox" value="premium"> Premium</label>
+        <label><input type="checkbox" value="antimaling"> AntiMaling</label>
+        <label><input type="checkbox" value="bot"> Sewa Bot</label>
+        <label><input type="checkbox" value="shop"> Shop</label>
+        <label><input type="checkbox" value="pulsa"> Pulsa</label>
+      </div>
+      <div class="meta">Tidak ada yang dicentang = semua jenis pembelian.</div>
+    </div>
+
+    <div id="f-plan" class="hide">
+      <label>Paket</label>
+      <select id="plan"><option value="basic">Basic</option><option value="pro">Pro</option></select>
+      <div class="warn">Paket dari kode ini berlaku <b>permanen</b> (belum ada masa berlaku paket di sistem). Batasi dengan kuota klaim.</div>
+    </div>
+
+    <div class="row">
+      <div><label>Kuota klaim (0 = tanpa batas)</label><input id="maxUses" type="number" inputmode="numeric" value="1"></div>
+      <div><label>Kedaluwarsa (opsional)</label><input id="expiresAt" type="date"></div>
+    </div>
+    <label>Kode (kosong = dibuat otomatis)</label>
+    <input id="code" placeholder="mis. HEMAT20" autocapitalize="characters">
+    <label>Catatan (hanya kamu yang lihat)</label>
+    <input id="note" maxlength="80" placeholder="mis. giveaway TikTok">
+    <div id="cmsg" class="msg"></div>
+    <button class="btn" id="create">Buat Kode</button>
+  </div>
+
+  <div class="top"><b>Daftar kode</b><button class="sm" id="reload">Muat ulang</button></div>
+  <div id="list" style="margin-top:10px"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const eh=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let TOKEN=sessionStorage.getItem('rd_token')||'';
+
+async function api(path,opts={}){
+  const r=await fetch(path,Object.assign({},opts,{headers:Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},opts.headers||{})}));
+  let d={};try{d=await r.json();}catch(e){}
+  if(r.status===401||r.status===403){ logout(); throw new Error(d.error||'Sesi habis'); }
+  if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+  return d;
+}
+function show(msgEl,type,text){ msgEl.className='msg '+type; msgEl.textContent=text; }
+function logout(){ TOKEN=''; sessionStorage.removeItem('rd_token'); $('app').classList.add('hide'); $('login').classList.remove('hide'); }
+
+$('lbtn').onclick=async()=>{
+  const b=$('lbtn'); b.disabled=true; $('lerr').className='msg';
+  try{
+    const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('em').value.trim(),password:$('pw').value})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(d.error||'Gagal masuk');
+    if(!d.user||d.user.plan!=='owner') throw new Error('Khusus akun Owner.');
+    TOKEN=d.token; sessionStorage.setItem('rd_token',TOKEN); $('pw').value='';
+    start();
+  }catch(e){ show($('lerr'),'err',e.message); }
+  b.disabled=false;
+};
+$('out').onclick=logout;
+$('kind').onchange=()=>{ const p=$('kind').value==='plan'; $('f-plan').classList.toggle('hide',!p); $('f-discount').classList.toggle('hide',p); };
+
+async function load(){
+  const el=$('list');
+  try{
+    const {codes}=await api('/api/admin/redeem');
+    if(!codes.length){ el.innerHTML='<div class="card meta">Belum ada kode.</div>'; return; }
+    el.innerHTML=codes.map(c=>{
+      const st=!c.active?'<span class="pill off">nonaktif</span>':c.expired?'<span class="pill exp">kedaluwarsa</span>':'<span class="pill" style="background:#E5F6EE;color:#1E9E62">aktif</span>';
+      const ap=c.kind==='discount'?((c.appliesTo&&c.appliesTo.length)?c.appliesTo.join(', '):'semua pembelian'):'';
+      return `<div class="card">
+        <div class="top"><span class="code">${eh(c.code)}</span>${st}</div>
+        <div class="meta"><b>${eh(c.label)}</b>${ap?' · '+eh(ap):''}<br>
+          Terklaim ${c.usedCount}${c.maxUses>0?'/'+c.maxUses:' (tanpa batas)'}
+          ${c.expiresAt?' · sampai '+eh(new Date(c.expiresAt).toLocaleDateString('id-ID')):''}
+          ${c.note?'<br>📝 '+eh(c.note):''}</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="sm" data-a="copy" data-c="${eh(c.code)}">Salin</button>
+          <button class="sm" data-a="toggle" data-c="${eh(c.code)}" data-on="${c.active?1:0}">${c.active?'Nonaktifkan':'Aktifkan'}</button>
+          <button class="sm del" data-a="del" data-c="${eh(c.code)}">Hapus</button>
+        </div></div>`;
+    }).join('');
+  }catch(e){ el.innerHTML='<div class="card meta">Gagal memuat: '+eh(e.message)+'</div>'; }
+}
+$('list').onclick=async e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const c=b.dataset.c;
+  try{
+    if(b.dataset.a==='copy'){ await navigator.clipboard.writeText(c); b.textContent='Tersalin'; setTimeout(()=>b.textContent='Salin',1200); return; }
+    if(b.dataset.a==='toggle'){ await api('/api/admin/redeem/'+encodeURIComponent(c),{method:'PUT',body:JSON.stringify({active:b.dataset.on!=='1'})}); }
+    if(b.dataset.a==='del'){ if(!confirm('Hapus kode '+c+'?')) return; await api('/api/admin/redeem/'+encodeURIComponent(c),{method:'DELETE'}); }
+    load();
+  }catch(err){ alert(err.message); }
+};
+$('reload').onclick=load;
+
+$('create').onclick=async()=>{
+  const btn=$('create'), m=$('cmsg'); m.className='msg'; btn.disabled=true;
+  const kind=$('kind').value;
+  const body={kind,code:$('code').value,note:$('note').value,maxUses:$('maxUses').value,expiresAt:$('expiresAt').value?($('expiresAt').value+'T23:59:59+07:00'):''};
+  if(kind==='plan') body.plan=$('plan').value;
+  else{
+    body.percent=$('percent').value; body.amount=$('amount').value; body.maxDiscount=$('maxDiscount').value;
+    body.appliesTo=[...document.querySelectorAll('#applies input:checked')].map(i=>i.value);
+  }
+  try{
+    const d=await api('/api/admin/redeem',{method:'POST',body:JSON.stringify(body)});
+    show(m,'ok','Kode dibuat: '+d.code);
+    ['code','note','percent','amount','maxDiscount'].forEach(i=>$(i).value='');
+    load();
+  }catch(e){ show(m,'err',e.message); }
+  btn.disabled=false;
+};
+
+function start(){ $('login').classList.add('hide'); $('app').classList.remove('hide'); load(); }
+if(TOKEN) start(); else $('login').classList.remove('hide');
+</script>
+</body>
+</html>

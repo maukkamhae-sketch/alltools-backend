@@ -13,8 +13,6 @@ const { registerShop } = require('./shop-backend');
 const { registerBotSender } = require('./bot-sender');
 const { registerStatusMusic } = require('./status-music-backend');
 const { registerPush } = require('./push-backend');
-const { registerRedeem } = require('./redeem-backend');
-let redeemApi = null;
 
 const app = express();
 // CORS dibatasi ke domain yang diizinkan (set env ALLOWED_ORIGINS, pisah koma,
@@ -584,21 +582,14 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     price = product.price;
     extra = { type: 'pulsa', basePrice: product.basePrice, fee: product.fee, operator: product.operator, phoneNumber: phone };
   }
-  let promo = null;
-  if (redeemApi) {
-    const r = redeemApi.applyPromo(req.user.id, extra.type, price);
-    if (r) { promo = r; price = r.price; label = `${label} (kode ${r.code})`; }
-  }
   const uniqueCode = 1 + Math.floor(Math.random() * 99);
   const total = price + uniqueCode;
   const orderId = `MANUAL-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   db.saveOrder({
     orderId, userId: req.user.id, productLabel: label, price: total, uniqueCode,
     status: 'awaiting_payment', createdAt: new Date().toISOString(), ...extra,
-    ...(promo ? { promoCode: promo.code, promoDiscount: promo.discount } : {}),
   });
-  if (promo && redeemApi) redeemApi.reserve(req.user.id, promo.code, orderId);
-  res.json({ orderId, label, total, dana: getDanaNumber(), discount: promo ? promo.discount : 0 });
+  res.json({ orderId, label, total, dana: getDanaNumber() });
 });
 
 // User menekan "Sudah bayar": kirim notifikasi ke Telegram dengan tombol konfirmasi.
@@ -690,7 +681,6 @@ function settleOrder(order, action) {
   if (action === 'ok') {
     order.status = 'paid';
     db.saveOrder(order);
-    if (redeemApi) redeemApi.onSettle(order, 'ok');
     if (order.type === 'premium') {
       const user = db.findUserById(order.userId);
       if (user) { user.plan = order.plan; db.saveUser(user); }
@@ -722,7 +712,6 @@ function settleOrder(order, action) {
   }
   order.status = 'failed';
   db.saveOrder(order);
-  if (redeemApi) redeemApi.onSettle(order, 'no');
   return { ok: true, note: '❌ Pesanan ditolak.' };
 }
 
@@ -1425,7 +1414,6 @@ registerStatusMusic(app, { db, requireAuth });
 
 /* Notifikasi push (promo/diskon dari Owner) */
 registerPush(app, { db, requireAuth, requireOwner });
-redeemApi = registerRedeem(app, { db, requireAuth, requireOwner });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });
