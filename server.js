@@ -389,7 +389,7 @@ const DEFAULT_BOT_NUMBER = '62881012484500';
 function getBotNumber() {
   return db.getSettings().platformBotNumber || DEFAULT_BOT_NUMBER;
 }
-const BOT_FEATURES = ['autoreply','welcome','catalog','broadcast','antilink','reminder','orderbot','faq','ai','downloader','sticker'];
+const BOT_FEATURES = ['autoreply','welcome','catalog','broadcast','antilink','reminder','orderbot','faq','ai','downloader','sticker','pushkontak'];
 function getBotPrices() {
   return { week: 25000, month: 75000, ...(db.getSettings().botPrices || {}) };
 }
@@ -560,6 +560,7 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     if (!botName) return res.status(400).json({ error: 'Nama bot wajib diisi.' });
     const feats = Array.isArray(features) ? [...new Set(features.filter(f => BOT_FEATURES.includes(f)))] : [];
     if (!feats.length) return res.status(400).json({ error: 'Pilih minimal 1 fitur.' });
+    if (mode === 'global' && feats.includes('pushkontak')) return res.status(400).json({ error: 'Push Kontak hanya tersedia di Sender Personal.' });
     const prices = mode === 'global' ? getGlobalBotPrices() : getBotPrices();
     const key = days === 1 ? 'day' : days === 7 ? 'week' : 'month';
     label = `Sewa Bot "${botName}" (${days} hari, Sender ${mode === 'global' ? 'Global' : 'Personal'})`;
@@ -1399,8 +1400,7 @@ app.delete('/api/admin/inbox/:id', requireOwner, (req, res) => {
 });
 
 /* Sender WhatsApp per bot sewaan (pairing code, semua fitur bot) */
-app.locals.globalBotStatus = globalBotStatus; // dipakai bot-sender: kalau !online, balas offMessage lalu berhenti
-registerBotSender(app, { db, requireAuth, askAI: askGemini, globalBotStatus });
+registerBotSender(app, { db, requireAuth, requireOwner, askAI: askGemini, globalBotStatus });
 
 /* Status 24 jam + musik Spotify */
 registerStatusMusic(app, { db, requireAuth });
