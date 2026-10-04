@@ -393,6 +393,32 @@ const BOT_FEATURES = ['autoreply','welcome','catalog','broadcast','antilink','re
 function getBotPrices() {
   return { week: 25000, month: 75000, ...(db.getSettings().botPrices || {}) };
 }
+// Sender Global = bot jalan di nomor WhatsApp pusat (tanpa pasang nomor sendiri).
+// Harga per durasi; bisa diubah dari /admin lewat field globalBotPrices.
+function getGlobalBotPrices() {
+  return { day: 10000, week: 25000, month: 60000, ...(db.getSettings().globalBotPrices || {}) };
+}
+// Jadwal online Sender Global (WIB, UTC+7). Di luar jendela ini bot Global jeda.
+// Jendela yang lewat tengah malam (21:00-02:00) didukung. Bisa diubah dari /admin config: globalSchedule.
+const DEFAULT_GLOBAL_WINDOWS = [['06:00', '12:00'], ['18:00', '02:00']];
+function getGlobalWindows() {
+  const w = (db.getSettings().globalSchedule || {}).windows;
+  return Array.isArray(w) && w.length ? w : DEFAULT_GLOBAL_WINDOWS;
+}
+function hm(t) { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); }
+function globalBotStatus(now = new Date()) {
+  const wib = new Date(now.getTime() + 7 * 3600000);
+  const cur = wib.getUTCHours() * 60 + wib.getUTCMinutes();
+  const wins = getGlobalWindows();
+  const inWin = ([a, b]) => { const s = hm(a), e = hm(b); return s <= e ? cur >= s && cur < e : cur >= s || cur < e; };
+  const online = wins.some(inWin);
+  let next = null, best = 1e9;
+  wins.forEach(([a]) => { const d = (hm(a) - cur + 1440) % 1440 || 1440; if (d < best) { best = d; next = a; } });
+  return {
+    online, windows: wins, nextOnAt: online ? null : next,
+    offMessage: `Bot sedang istirahat. Aktif lagi jam ${next} WIB.`,
+  };
+}
 function getAmPrice() {
   return db.getSettings().amPrice || 49000; // sekali bayar, per HP, berlaku selamanya
 }
@@ -404,7 +430,7 @@ function getDanaNumber() {
 }
 
 app.get('/api/bots/prices', (req, res) => {
-  res.json({ prices: getBotPrices() });
+  res.json({ prices: getBotPrices(), globalPrices: getGlobalBotPrices(), globalNumber: getBotNumber(), globalStatus: globalBotStatus() });
 });
 
 app.get('/api/antimaling/price', (req, res) => {
@@ -424,11 +450,13 @@ app.get('/api/bots/mine', requireAuth, (req, res) => {
   const now = Date.now();
   const bots = db.getBotsForUser(req.user.id).map(b => ({
     ...b, apiKey: undefined,
+    senderMode: b.senderMode === 'global' ? 'global' : 'personal',
+    globalNumber: b.senderMode === 'global' ? getBotNumber() : undefined,
     status: new Date(b.expiresAt).getTime() > now ? 'active' : 'expired',
   }));
   const pending = db.getOrdersForUser(req.user.id, 100)
     .filter(o => o.type === 'bot' && ['awaiting_payment', 'waiting_confirmation'].includes(o.status))
-    .map(o => ({ orderId: o.orderId, name: o.botName, durationDays: o.durationDays, price: o.price, status: o.status }));
+    .map(o => ({ orderId: o.orderId, name: o.botName, durationDays: o.durationDays, price: o.price, status: o.status, senderMode: o.senderMode || 'personal' }));
   res.json({ bots, pending });
 });
 
@@ -524,16 +552,19 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     price = item.price;
     extra = { type: 'shop', itemId: item.id, itemName: item.name, itemKind: item.kind, roleBadge: item.roleBadge || '', itemNote: item.note || '', grantPlan: item.grantPlan || '' };
   } else if (type === 'bot') {
+    const mode = req.body.senderMode === 'global' ? 'global' : 'personal';
     const days = Number(durationDays);
-    if (![7, 30].includes(days)) return res.status(400).json({ error: 'Durasi sewa tidak valid.' });
+    const allowed = mode === 'global' ? [1, 7, 30] : [7, 30];
+    if (!allowed.includes(days)) return res.status(400).json({ error: 'Durasi sewa tidak valid.' });
     const botName = String(name || '').trim().slice(0, 60);
     if (!botName) return res.status(400).json({ error: 'Nama bot wajib diisi.' });
     const feats = Array.isArray(features) ? [...new Set(features.filter(f => BOT_FEATURES.includes(f)))] : [];
     if (!feats.length) return res.status(400).json({ error: 'Pilih minimal 1 fitur.' });
-    const prices = getBotPrices();
-    label = `Sewa Bot "${botName}" (${days} hari)`;
-    price = days === 7 ? prices.week : prices.month;
-    extra = { type: 'bot', botName, features: feats, durationDays: days };
+    const prices = mode === 'global' ? getGlobalBotPrices() : getBotPrices();
+    const key = days === 1 ? 'day' : days === 7 ? 'week' : 'month';
+    label = `Sewa Bot "${botName}" (${days} hari, Sender ${mode === 'global' ? 'Global' : 'Personal'})`;
+    price = prices[key];
+    extra = { type: 'bot', botName, features: feats, durationDays: days, senderMode: mode };
   } else {
     const product = getPulsaProducts().find(x => x.id === productId);
     if (!product) return res.status(400).json({ error: 'Produk tidak dikenali.' });
@@ -567,7 +598,7 @@ app.post('/api/manual/claim', requireAuth, async (req, res) => {
       : order.type === 'shop'
         ? `Item Shop: ${escapeHtml(order.itemName)}${order.itemKind === 'role' ? '\nLabel role: ' + escapeHtml(order.roleBadge) : ' (kirim manual)'}`
       : order.type === 'bot'
-        ? `Sewa bot: ${escapeHtml(order.botName)}\nDurasi: ${order.durationDays} hari\nFitur: ${escapeHtml(order.features.join(', '))}`
+        ? `Sewa bot: ${escapeHtml(order.botName)}\nSender: ${order.senderMode === 'global' ? 'GLOBAL (nomor pusat)' : 'Personal'}\nDurasi: ${order.durationDays} hari\nFitur: ${escapeHtml(order.features.join(', '))}`
         : order.type === 'antimaling'
           ? `Proteksi AntiMaling untuk: ${escapeHtml(order.deviceLabel)}`
           : `Produk: ${escapeHtml(order.productLabel)}\nNomor tujuan: ${escapeHtml(order.phoneNumber)}`;
@@ -626,6 +657,7 @@ function createBotFromOrder(order) {
   const bot = {
     id: now.toString(36) + Math.random().toString(36).slice(2, 7),
     userId: order.userId, name: order.botName, features: order.features,
+    senderMode: order.senderMode === 'global' ? 'global' : 'personal',
     apiKey: crypto.randomBytes(16).toString('hex'), pin, orderId: order.orderId,
     status: 'active', createdAt: new Date(now).toISOString(),
     expiresAt: new Date(now + order.durationDays * 86400000).toISOString(),
@@ -662,7 +694,7 @@ function settleOrder(order, action) {
     }
     if (order.type === 'bot') {
       const bot = createBotFromOrder(order);
-      return { ok: true, note: `✅ Dikonfirmasi. Bot \"${bot.name}\" aktif ${order.durationDays} hari. User tinggal buka menu Sewa Bot lalu Pasang Sender (nomor WhatsApp-nya sendiri).` };
+      return { ok: true, note: `✅ Dikonfirmasi. Bot \"${bot.name}\" aktif ${order.durationDays} hari. ${bot.senderMode === 'global' ? 'Sender GLOBAL: otomatis pakai nomor pusat, user tidak perlu pasang sender.' : 'User tinggal buka menu Sewa Bot lalu Pasang Sender (nomor WhatsApp-nya sendiri).'}` };
     }
     if (order.type === 'antimaling') {
       const dev = createAmDeviceFromOrder(order);
@@ -765,11 +797,11 @@ app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
 });
 
 app.get('/api/admin/config', requireOwner, (req, res) => {
-  res.json({ products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
+  res.json({ products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), globalBotPrices: getGlobalBotPrices(), globalSchedule: { windows: getGlobalWindows() }, botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
 });
 
 app.put('/api/admin/config', requireOwner, (req, res) => {
-  const { products, planPrices, botPrices, botNumber, amPrice, amApkUrl, dana } = req.body || {};
+  const { products, planPrices, botPrices, globalBotPrices, globalSchedule, botNumber, amPrice, amApkUrl, dana } = req.body || {};
   const toInt = v => Math.round(Number(v));
   const patch = {};
 
@@ -812,6 +844,21 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
     patch.botPrices = { week, month };
   }
 
+  if (globalSchedule !== undefined) {
+    const w = globalSchedule && globalSchedule.windows;
+    const ok = Array.isArray(w) && w.length && w.every(x => Array.isArray(x) && x.length === 2 && x.every(t => /^([01]\d|2[0-3]):[0-5]\d$/.test(t)));
+    if (!ok) return res.status(400).json({ error: 'Format jadwal salah. Contoh: [["06:00","12:00"],["21:00","02:00"]]' });
+    patch.globalSchedule = { windows: w };
+  }
+
+  if (globalBotPrices !== undefined) {
+    const day = toInt(globalBotPrices && globalBotPrices.day);
+    const week = toInt(globalBotPrices && globalBotPrices.week);
+    const month = toInt(globalBotPrices && globalBotPrices.month);
+    if (!(day > 0) || !(week > 0) || !(month > 0)) return res.status(400).json({ error: 'Harga Sender Global harus lebih dari 0.' });
+    patch.globalBotPrices = { day, week, month };
+  }
+
   if (botNumber !== undefined) {
     const n = String(botNumber).replace(/[^0-9]/g, '');
     if (n.length < 8) return res.status(400).json({ error: 'Nomor bot tidak valid.' });
@@ -839,7 +886,7 @@ app.put('/api/admin/config', requireOwner, (req, res) => {
   }
 
   db.updateSettings(patch);
-  res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
+  res.json({ ok: true, products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), globalBotPrices: getGlobalBotPrices(), globalSchedule: { windows: getGlobalWindows() }, botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
 });
 
 app.get('/api/admin/orders', requireOwner, (req, res) => {
@@ -1304,7 +1351,14 @@ function titleRankOf(badge) {
 }
 // Katalog Shop untuk aplikasi: hanya titel (tanpa produk bawaan).
 app.get('/api/shop/items', (req, res) => {
-  res.json({ builtin: [], custom: getShopTitles().map(({ id, name, icon, desc, price, kind, roleBadge, rank, perks }) => ({ id, name, icon, desc, price, kind, roleBadge, rank, perks })) });
+  const gp = getGlobalBotPrices();
+  const fmtW = getGlobalWindows().map(w => w[0] + '-' + w[1]).join(', ');
+  const builtin = [
+    { id: 'gsender-day',   name: 'Sender Global 1 Hari',    days: 1,  price: gp.day },
+    { id: 'gsender-week',  name: 'Sender Global 1 Minggu',  days: 7,  price: gp.week },
+    { id: 'gsender-month', name: 'Sender Global 1 Bulan',   days: 30, price: gp.month },
+  ].map(i => ({ ...i, icon: '🌐', desc: `Bot pakai nomor pusat, tanpa pasang nomor sendiri. Aktif ${fmtW} WIB.`, go: { type: 'page', page: 'bots', mode: 'global', days: i.days } }));
+  res.json({ builtin, custom: getShopTitles().map(({ id, name, icon, desc, price, kind, roleBadge, rank, perks }) => ({ id, name, icon, desc, price, kind, roleBadge, rank, perks })) });
 });
 
 /* AllTools Shop: katalog produk bawaan + item buatan Owner */
@@ -1345,7 +1399,8 @@ app.delete('/api/admin/inbox/:id', requireOwner, (req, res) => {
 });
 
 /* Sender WhatsApp per bot sewaan (pairing code, semua fitur bot) */
-registerBotSender(app, { db, requireAuth, askAI: askGemini });
+app.locals.globalBotStatus = globalBotStatus; // dipakai bot-sender: kalau !online, balas offMessage lalu berhenti
+registerBotSender(app, { db, requireAuth, askAI: askGemini, globalBotStatus });
 
 /* Status 24 jam + musik Spotify */
 registerStatusMusic(app, { db, requireAuth });
