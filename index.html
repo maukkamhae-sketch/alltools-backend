@@ -2,2810 +2,613 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AllTools</title>
-<link rel="manifest" href="manifest.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guardline — Dashboard kontrol orang tua</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
 <style>
-:root{
-  --bg:#F6F4FB;
-  --ink:#1D1B2E;
-  --ink-soft:#5B5770;
-  --line:#E3DFF2;
-  --card:#FFFFFF;
-  --accent:#5B3DF5;
-  --accent-ink:#FFFFFF;
-  --amber:#F5A623;
-  --amber-ink:#3A2400;
-  --danger:#E0483E;
-  --radius:18px;
-}
-@media (prefers-color-scheme: dark){
   :root{
-    --bg:#141225;
-    --ink:#F1EFFB;
-    --ink-soft:#A6A1C4;
-    --line:#2C2846;
-    --card:#1D1A35;
-    --accent:#8B7BFF;
-    --accent-ink:#141225;
-    --amber:#F5B84B;
-    --amber-ink:#241600;
+    --bg-0:#0B1120;
+    --bg-1:#111A2E;
+    --bg-2:#16213A;
+    --border:#232F49;
+    --border-strong:#31405f;
+    --text-primary:#EAF0FA;
+    --text-secondary:#93A1BE;
+    --text-muted:#5C6B8A;
+    --mint:#3FE0C5;
+    --mint-dim:#1B4A44;
+    --coral:#FB7A6B;
+    --coral-dim:#4A2622;
+    --amber:#F2B84B;
   }
-}
-:root[data-theme="light"]{
-  --bg:#F6F4FB;--ink:#1D1B2E;--ink-soft:#5B5770;--line:#E3DFF2;--card:#FFFFFF;--accent:#5B3DF5;--accent-ink:#FFFFFF;--amber:#F5A623;--amber-ink:#3A2400;
-}
-:root[data-theme="dark"]{
-  --bg:#141225;--ink:#F1EFFB;--ink-soft:#A6A1C4;--line:#2C2846;--card:#1D1A35;--accent:#8B7BFF;--accent-ink:#141225;--amber:#F5B84B;--amber-ink:#241600;
-}
-*{box-sizing:border-box;}
-body{
-  margin:0;background:var(--bg);color:var(--ink);
-  font-family:'Inter',system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased;
-}
-h1,h2,h3,.brand{font-family:'Space Grotesk',sans-serif;}
-.shell{
-  max-width:480px;margin:0 auto;min-height:100vh;
-  display:flex;flex-direction:column;
-}
-header.top{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:20px 20px 8px;
-}
-.brand{font-size:20px;font-weight:700;letter-spacing:-0.02em;}
-.brand span{color:var(--accent);}
-main{flex:1;padding:8px 20px 100px;overflow-x:hidden;}
-.hidden{display:none !important;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg-0);
+    color:var(--text-primary);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+  }
+  h1,h2,h3,.display{font-family:'Space Grotesk',sans-serif;font-weight:600;}
 
-/* Home */
-.paste-bar{
-  display:flex;align-items:center;gap:10px;
-  background:var(--card);border:1px solid var(--line);
-  border-radius:var(--radius);padding:12px 16px;margin:12px 0 20px;
-}
-.paste-bar input{
-  border:none;background:transparent;outline:none;flex:1;
-  font-size:14px;color:var(--ink);font-family:inherit;
-}
-.paste-bar input::placeholder{color:var(--ink-soft);}
-.paste-bar button{
-  background:var(--accent);color:var(--accent-ink);border:none;
-  border-radius:999px;padding:8px 16px;font-size:13px;font-weight:600;
-  cursor:pointer;font-family:inherit;
-}
-.section-label{font-size:13px;color:var(--ink-soft);margin:18px 0 10px;font-weight:500;}
-.plan-badge{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  border-radius:12px;padding:10px 14px;margin-top:14px;font-size:12px;
-}
-.plan-badge.premium{background:linear-gradient(90deg, var(--accent), #8B5CF6);color:#fff;}
-.plan-badge.free{background:var(--card);border:1px solid var(--line);color:var(--ink-soft);}
+  /* ---------- layout ---------- */
+  .sidebar{
+    width:230px;
+    flex-shrink:0;
+    background:var(--bg-1);
+    border-right:1px solid var(--border);
+    padding:28px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-size:18px;}
+  .brand-mark{
+    width:30px;height:30px;border-radius:9px;
+    background:linear-gradient(150deg,var(--mint),#1E8F7C);
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:700;color:#04231D;
+  }
+  .nav{display:flex;flex-direction:column;gap:4px;}
+  .nav a{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;border-radius:8px;
+    color:var(--text-secondary);text-decoration:none;font-size:14px;
+    transition:background .15s, color .15s;
+  }
+  .nav a.active{background:var(--bg-2);color:var(--text-primary);}
+  .nav a:hover{background:var(--bg-2);color:var(--text-primary);}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--text-muted);}
+  .dot.on{background:var(--mint);}
 
-/* Splash screen 3D */
-#splash{
-  position:fixed;inset:0;z-index:9999;
-  background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
-  transition:opacity 0.5s ease, visibility 0.5s ease;
-}
-#splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
-.cube-scene{
-  width:80px;height:80px;perspective:600px;
-}
-.cube{
-  width:100%;height:100%;position:relative;
-  transform-style:preserve-3d;
-  animation:cube-spin 2.6s infinite linear;
-}
-.cube-face{
-  position:absolute;width:80px;height:80px;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:#fff;
-  background:var(--accent);
-  border:1px solid rgba(255,255,255,0.25);
-  opacity:0.92;
-}
-.cube-face.front{transform:translateZ(40px);}
-.cube-face.back{transform:translateZ(-40px) rotateY(180deg);}
-.cube-face.right{transform:rotateY(90deg) translateZ(40px);background:#8B5CF6;}
-.cube-face.left{transform:rotateY(-90deg) translateZ(40px);background:#8B5CF6;}
-.cube-face.top{transform:rotateX(90deg) translateZ(40px);background:var(--amber);}
-.cube-face.bottom{transform:rotateX(-90deg) translateZ(40px);background:var(--amber);}
-@keyframes cube-spin{
-  0%{transform:rotateX(-25deg) rotateY(0deg);}
-  100%{transform:rotateX(-25deg) rotateY(360deg);}
-}
-.splash-brand{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--ink);}
-.splash-brand span{color:var(--accent);}
-.splash-sub{font-size:12px;color:var(--ink-soft);margin-top:-18px;}
+  .device-list{display:flex;flex-direction:column;gap:6px;margin-top:auto;}
+  .device-list-label{font-size:11px;color:var(--text-muted);letter-spacing:.04em;margin-bottom:6px;}
+  .device-item{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 10px;border-radius:8px;font-size:13px;
+    background:var(--bg-2);border:1px solid var(--border);
+    color:var(--text-secondary);cursor:pointer;
+  }
+  .device-item.selected{border-color:var(--mint);color:var(--text-primary);}
 
-/* Video editor templates */
-.ve-template-card{
-  border-radius:12px;border:1px solid var(--line);padding:12px;cursor:pointer;
-  background:var(--bg);text-align:left;font-family:inherit;
-}
-.ve-template-card.active{border-color:var(--accent);background:rgba(91,61,245,0.08);}
-.ve-template-swatch{width:100%;height:36px;border-radius:8px;margin-bottom:8px;}
-.ve-template-card b{font-size:12px;display:block;}
-.ve-template-card small{font-size:10px;color:var(--ink-soft);}
-.marquee-wrap{
-  background:linear-gradient(90deg, var(--accent), #8B5CF6);
-  border-radius:14px;overflow:hidden;margin:14px 0 4px;
-  display:block;text-decoration:none;
-}
-.marquee-track{
-  display:flex;white-space:nowrap;padding:10px 0;
-  animation:marquee 14s linear infinite;
-}
-.marquee-track span{
-  color:#fff;font-size:13px;font-weight:600;padding:0 24px;
-  display:inline-flex;align-items:center;gap:6px;
-}
-@keyframes marquee{
-  0%{transform:translateX(0);}
-  100%{transform:translateX(-50%);}
-}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.tile{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:18px 16px;text-align:left;cursor:pointer;
-  font-family:inherit;color:var(--ink);
-}
-.tile .ic{
-  width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;
-  background:var(--accent);color:var(--accent-ink);font-size:18px;margin-bottom:12px;
-}
-.tile .ic.amber{background:var(--amber);color:var(--amber-ink);}
-.tile b{display:block;font-size:14px;margin-bottom:2px;}
-.tile small{color:var(--ink-soft);font-size:12px;line-height:1.4;display:block;}
+  .main{flex:1;padding:32px 40px;overflow-y:auto;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;}
+  .topbar h1{font-size:24px;}
+  .topbar p{color:var(--text-secondary);font-size:14px;margin-top:4px;}
+  .status-pill{
+    display:flex;align-items:center;gap:8px;
+    background:var(--mint-dim);color:var(--mint);
+    border:1px solid #1E6F60;border-radius:100px;
+    padding:7px 14px;font-size:13px;font-weight:500;
+  }
+  .status-pill .dot{background:var(--mint);}
 
-/* Page header (feature pages) */
-.page-head{display:flex;align-items:center;gap:12px;padding:16px 0 4px;}
-.back-btn{
-  width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
-  background:var(--card);display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--ink);flex-shrink:0;
-}
-.page-head h2{font-size:18px;margin:0;}
+  /* ---------- hero 3D panel ---------- */
+  .hero{
+    position:relative;
+    background:var(--bg-1);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:0;
+    height:300px;
+    display:flex;
+    overflow:hidden;
+    margin-bottom:24px;
+  }
+  .hero-canvas{flex:1;min-width:0;cursor:grab;}
+  .hero-side{
+    width:280px;flex-shrink:0;
+    padding:26px 26px;
+    border-left:1px solid var(--border);
+    display:flex;flex-direction:column;justify-content:center;gap:18px;
+  }
+  .hero-side .label{font-size:12px;color:var(--text-muted);}
+  .hero-side .value{font-size:26px;font-family:'Space Grotesk',sans-serif;font-weight:600;margin-top:2px;}
+  .hero-side .sub{font-size:13px;color:var(--text-secondary);margin-top:2px;}
+  .lock-btn{
+    margin-top:6px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--coral-dim);color:var(--coral);
+    border:1px solid #6b3128;border-radius:10px;
+    padding:12px;font-size:14px;font-weight:600;
+    cursor:pointer;transition:transform .12s, background .15s;
+    font-family:'Inter',sans-serif;
+  }
+  .lock-btn:hover{background:#59281f;}
+  .lock-btn:active{transform:scale(0.97);}
+  .lock-btn.locked{background:var(--mint-dim);color:var(--mint);border-color:#1E6F60;}
+  .hero-hint{position:absolute;bottom:14px;left:14px;font-size:11px;color:var(--text-muted);}
 
-.card{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:18px;margin-top:16px;
-}
-.field-label{font-size:12px;color:var(--ink-soft);margin-bottom:6px;display:block;font-weight:500;}
-input[type=text], input[type=url], textarea, select{
-  width:100%;border:1px solid var(--line);border-radius:12px;
-  padding:11px 13px;font-size:14px;font-family:inherit;color:var(--ink);
-  background:var(--bg);outline:none;
-}
-textarea{resize:vertical;min-height:72px;}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  background:var(--accent);color:var(--accent-ink);border:none;
-  border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;
-  cursor:pointer;font-family:inherit;width:100%;margin-top:14px;
-}
-.btn.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);}
-.err{color:var(--danger);font-size:12px;margin-top:6px;display:none;}
-.note{
-  font-size:12px;color:var(--ink-soft);line-height:1.6;margin-top:14px;
-  padding:12px 14px;background:var(--bg);border-radius:12px;border:1px dashed var(--line);
-}
-.result{
-  margin-top:16px;border-radius:14px;overflow:hidden;border:1px solid var(--line);
-  display:none;
-}
-.result img,.result video{width:100%;display:block;}
-.result-info{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.result-info span{font-size:12px;color:var(--ink-soft);}
-.spin{
-  width:16px;height:16px;border-radius:50%;
-  border:2px solid rgba(255,255,255,0.4);border-top-color:currentColor;
-  animation:sp 0.7s linear infinite;
-}
-@keyframes sp{to{transform:rotate(360deg);}}
+  /* ---------- stat grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:24px;}
+  .card{
+    background:var(--bg-1);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px 22px;
+    transform-style:preserve-3d;
+    transition:transform .25s ease, border-color .25s ease;
+  }
+  .card:hover{border-color:var(--border-strong);}
+  .card .label{font-size:13px;color:var(--text-secondary);display:flex;align-items:center;justify-content:space-between;}
+  .card .big{font-size:28px;font-family:'Space Grotesk',sans-serif;font-weight:600;margin-top:10px;}
+  .card .foot{font-size:12px;color:var(--text-muted);margin-top:6px;}
+  .bar-track{height:6px;background:var(--bg-2);border-radius:100px;margin-top:14px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--mint);border-radius:100px;}
 
-/* Chat */
-.chat-box{
-  display:flex;flex-direction:column;gap:10px;margin-top:16px;
-  min-height:200px;
-}
-.msg{max-width:80%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;}
-.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px;}
-.msg.ai{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px;}
-.chat-input-row{display:flex;gap:8px;margin-top:14px;}
-.chat-input-row input{flex:1;}
-.chat-input-row button{
-  background:var(--accent);color:var(--accent-ink);border:none;border-radius:12px;
-  width:44px;flex-shrink:0;cursor:pointer;font-size:16px;
-}
+  .panel-row{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  .panel{
+    background:var(--bg-1);border:1px solid var(--border);
+    border-radius:14px;padding:22px 24px;
+  }
+  .panel h3{font-size:15px;margin-bottom:16px;}
+  .app-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .app-row:last-child{border-bottom:none;}
+  .app-name{display:flex;align-items:center;gap:10px;color:var(--text-primary);}
+  .app-icon{width:26px;height:26px;border-radius:7px;background:var(--bg-2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary);}
+  .toggle{width:36px;height:20px;border-radius:100px;background:var(--bg-2);border:1px solid var(--border-strong);position:relative;cursor:pointer;flex-shrink:0;}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text-muted);transition:transform .15s, background .15s;}
+  .toggle.on{background:var(--mint-dim);border-color:#1E6F60;}
+  .toggle.on::after{transform:translateX(16px);background:var(--mint);}
 
-/* Slider compare */
-.slide-wrap{position:relative;margin-top:16px;border-radius:14px;overflow:hidden;display:none;}
-.slide-wrap img{width:100%;display:block;}
-input[type=range]{width:100%;margin-top:10px;}
+  .schedule-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13px;color:var(--text-secondary);}
+  .schedule-row span.time{color:var(--text-primary);font-weight:500;}
 
-nav.bottom{
-  position:fixed;bottom:0;left:0;right:0;
-  background:var(--card);border-top:1px solid var(--line);
-  display:flex;justify-content:center;
-}
-nav.bottom .inner{
-  max-width:480px;width:100%;display:flex;justify-content:space-around;
-  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-}
-nav.bottom button{
-  background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;
-  color:var(--ink-soft);font-size:10px;cursor:pointer;font-family:inherit;padding:4px 10px;
-}
-nav.bottom button.active{color:var(--accent);}
-.navic{font-size:19px;line-height:1;}
+  /* ---------- login owner ---------- */
+  .login-screen{
+    position:fixed;inset:0;z-index:50;
+    background:var(--bg-0);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .login-card{
+    width:100%;max-width:360px;
+    background:var(--bg-1);border:1px solid var(--border);
+    border-radius:16px;padding:32px 28px;
+  }
+  .login-card .brand-mark{margin-bottom:18px;}
+  .login-card h2{font-size:20px;margin-bottom:4px;}
+  .login-card p{font-size:13px;color:var(--text-secondary);margin-bottom:22px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:6px;}
+  .field input{
+    width:100%;background:var(--bg-2);border:1px solid var(--border-strong);
+    border-radius:9px;padding:11px 12px;color:var(--text-primary);
+    font-family:'Inter',sans-serif;font-size:14px;
+  }
+  .field input:focus{outline:none;border-color:var(--mint);}
+  .field-error{font-size:12px;color:var(--coral);margin-top:6px;display:none;}
+  .login-btn{
+    width:100%;margin-top:6px;
+    background:var(--mint);color:#04231D;border:none;border-radius:9px;
+    padding:12px;font-size:14px;font-weight:600;cursor:pointer;
+    font-family:'Inter',sans-serif;transition:opacity .15s;
+  }
+  .login-btn:hover{opacity:.9;}
+  .login-foot{font-size:12px;color:var(--text-muted);text-align:center;margin-top:16px;}
+  .app-content{display:none;}
+  .app-content.ready{display:flex;}
 
-/* ---------- efek Premium ---------- */
-body{--pa:#8B7BFF;--pb:#C77DFF;}
-body.plan-pro,body.plan-owner{--pa:#F5A623;--pb:#FFD76A;}
-.brand .plan-chip{display:none;margin-left:8px;font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:999px;color:#2a1a00;background:linear-gradient(110deg,var(--pa),var(--pb),var(--pa));background-size:200% 100%;vertical-align:middle;}
-body.premium .brand .plan-chip{display:inline-block;animation:shine 3s linear infinite;}
-body.premium header.top{border-bottom:2px solid transparent;border-image:linear-gradient(90deg,var(--pa),var(--pb),var(--pa)) 1;}
-body.premium{background-image:radial-gradient(600px 260px at 50% -60px,color-mix(in srgb,var(--pa) 22%,transparent),transparent);background-repeat:no-repeat;}
-body.premium .card{border-color:color-mix(in srgb,var(--pa) 35%,var(--line));box-shadow:0 6px 22px -12px var(--pa);}
-body.premium .btn:not(.secondary){background:linear-gradient(135deg,var(--pa),var(--pb));color:#1d1200;}
-body.plan-basic .btn:not(.secondary){color:#fff;}
-body.premium nav.bottom button.active{color:var(--pa);}
-body.premium #akun-avatar{box-shadow:0 0 0 3px var(--pa),0 0 18px var(--pa);}
-body.premium #premium-status-card{background:linear-gradient(135deg,color-mix(in srgb,var(--pa) 25%,var(--card)),var(--card));}
-@keyframes shine{to{background-position:-200% 0;}}
-@keyframes crown{0%,100%{transform:translateY(0) rotate(-6deg);}50%{transform:translateY(-8px) rotate(6deg);}}
-@media (prefers-reduced-motion:reduce){.plan-chip{animation:none!important;}}
-
-/* ---------- banner video di atas Beranda ---------- */
-.hero-banner{position:relative;border-radius:18px;overflow:hidden;margin:4px 0 14px;aspect-ratio:720/454;max-height:260px;background:#000;border:1px solid var(--line);}
-.hero-banner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.hero-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.35),transparent 45%);pointer-events:none;}
-body.premium .hero-banner{border-color:color-mix(in srgb,var(--pa) 55%,transparent);box-shadow:0 8px 28px -12px var(--pa);}
-
-
-
-/* ---------- Beranda gaya baru ---------- */
-.hero-shade{background:linear-gradient(to top,rgba(0,0,0,.72),transparent 60%);}
-.jp-text{position:absolute;left:16px;right:16px;bottom:13px;display:flex;justify-content:space-between;align-items:flex-end;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);pointer-events:none;}
-.jp-title{font-weight:800;font-size:22px;letter-spacing:-.01em;line-height:1.1;}
-.jp-date{font-size:13px;opacity:.85;margin-top:3px;}
-.jp-time{font-weight:800;font-size:19px;white-space:nowrap;}
-.status-card.v2{padding:0;margin:0 0 6px;}
-.status-card .sc-banner{height:96px;position:relative;background:#000;}
-.status-card .sc-banner img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;display:block;opacity:.9;}
-.status-card .sc-banner:after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--card),transparent 70%);}
-.status-card .sc-body{padding:14px 16px 16px;}
-.status-card .sc-avatar.ring{width:50px;height:50px;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--accent);}
-.status-card .sc-hi{font-size:10.5px;font-weight:800;letter-spacing:.18em;color:var(--accent);}
-.status-card .sc-go{margin-left:6px;color:var(--ink-soft);font-size:20px;line-height:1;background:none;border:none;padding:0;}
-.home-sec{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--ink-soft);margin:16px 2px 8px;}
-.story-row{display:flex;gap:14px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;}
-.story-row::-webkit-scrollbar{display:none;}
-.story{flex:0 0 auto;width:62px;text-align:center;font-size:12px;color:var(--ink);background:none;border:none;padding:0;}
-.story .sa{position:relative;width:58px;height:58px;border-radius:50%;margin:0 auto 5px;background:var(--accent);color:var(--accent-ink,#fff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--line);}
-.story .sa i{position:absolute;right:-3px;bottom:-3px;width:20px;height:20px;border-radius:50%;background:#8B5CF6;color:#fff;font-style:normal;font-size:15px;line-height:20px;box-shadow:0 0 0 2px var(--bg);}
-.home-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border-radius:18px;padding:12px;background:var(--card);border:1px solid var(--line);color:var(--ink);}
-.home-row .hi{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto;}
-.home-row .ht{font-weight:700;font-size:15px;}
-.home-row .hs{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
-.home-row .hc{margin-left:auto;color:var(--ink-soft);font-size:20px;}
-.home-chat{margin-top:10px;}
-.home-chat .hi{background:color-mix(in srgb,#8B5CF6 22%,var(--card));}
-.home-music .hi{background:color-mix(in srgb,#22C55E 25%,var(--card));}
-.fab-help{position:fixed;right:16px;bottom:88px;width:46px;height:46px;border-radius:50%;background:#1D6FF2;color:#fff;display:flex;align-items:center;justify-content:center;font-size:21px;text-decoration:none;box-shadow:0 6px 18px rgba(29,111,242,.5);z-index:50;}
-.soon-toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:#222;color:#fff;font-size:13px;padding:9px 16px;border-radius:999px;z-index:100001;}
-
-/* ---------- Global Chat ---------- */
-.gc-list{height:calc(100vh - 250px);min-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;}
-.gc-msg{max-width:82%;padding:8px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);align-self:flex-start;word-break:break-word;font-size:14px;}
-.gc-msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink,#fff);border-color:transparent;}
-.gc-msg.bot{align-self:center;max-width:92%;background:transparent;border:1px dashed var(--line);font-size:12px;text-align:center;color:var(--ink-soft);}
-.gc-msg.bot .gc-name{color:var(--ink-soft);}
-.gc-name{font-size:11px;font-weight:800;color:var(--accent);margin-bottom:2px;}
-.gc-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.04em;color:#fff;padding:1px 6px;border-radius:999px;vertical-align:1px;}
-.gc-time{font-size:10px;opacity:.55;margin-left:6px;font-weight:500;}
-.gc-empty{margin:auto;color:var(--ink-soft);font-size:13px;text-align:center;}
-.gc-bar{display:flex;gap:8px;margin-top:10px;}
-.gc-bar input{flex:1;}
-
-/* ---------- layar loading Owner (Sasuke + Rasengan) ---------- */
-#owner-splash{display:none;position:fixed;inset:0;z-index:100001;background:#05030d;color:#fff;overflow:hidden;transition:opacity .6s ease;animation:osAutoHide .6s ease 9s forwards;}
-html.owner-splash-on #owner-splash{display:block;}
-#owner-splash.out{opacity:0;pointer-events:none;}
-#owner-splash .os-bg{position:absolute;inset:-4%;background:url(loading.webp) 47% 30%/cover no-repeat;animation:osKb 9s ease-out forwards;will-change:transform;}
-#owner-splash .os-glow{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;background:radial-gradient(70% 45% at 0% 30%,rgba(120,90,255,.55),transparent 70%);animation:osPulseA 2.4s ease-in-out infinite;}
-#owner-splash .os-glow.r{background:radial-gradient(70% 45% at 100% 32%,rgba(255,50,70,.5),transparent 70%);animation-name:osPulseB;}
-#owner-splash .os-shade{position:absolute;inset:0;background:linear-gradient(to top,#05030d 6%,rgba(5,3,13,.88) 22%,rgba(5,3,13,0) 52%),linear-gradient(to bottom,rgba(5,3,13,.55),transparent 22%);}
-#owner-splash canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-#owner-splash .os-ui{position:absolute;left:0;right:0;bottom:0;padding:0 28px calc(34px + env(safe-area-inset-bottom));}
-#owner-splash .os-wrap{max-width:420px;margin:0 auto;}
-#owner-splash .os-hello{font-size:12px;opacity:.8;letter-spacing:.04em;margin-bottom:8px;text-align:center;}
-#owner-splash .os-row{display:flex;justify-content:space-between;align-items:baseline;}
-#owner-splash .os-title{font-size:22px;font-weight:800;font-style:italic;letter-spacing:.06em;text-shadow:0 0 14px #8b6bff,0 0 30px #5b3df5;}
-#owner-splash .os-pct{font-size:13px;font-weight:700;opacity:.9;}
-#owner-splash .os-bar{height:12px;border-radius:999px;margin-top:10px;background:rgba(255,255,255,.12);border:1px solid rgba(160,140,255,.5);box-shadow:0 0 14px rgba(120,90,255,.5);overflow:hidden;}
-#owner-splash .os-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#6c4bff,#c9b8ff,#fff);box-shadow:0 0 12px #9b85ff;}
-#owner-splash .os-quote{margin-top:14px;font-size:13px;opacity:.88;line-height:1.5;text-align:center;}
-#owner-splash .os-quote i{display:block;opacity:.7;font-size:12px;margin-top:2px;}
-/* Rasengan (video, blend screen supaya latar hitamnya hilang) */
-.rasengan{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;transform-origin:50% 44%;transform:scale(var(--k,.6));transition:transform .2s linear;}
-.rasengan video{position:absolute;left:50%;top:44%;width:min(80vw,340px);transform:translate(-50%,-50%);-webkit-mask-image:radial-gradient(closest-side,#000 40%,transparent 100%);mask-image:radial-gradient(closest-side,#000 40%,transparent 100%);}
-.rasengan.burst{animation:rsBurst .5s ease-out forwards;}
-@keyframes rsBurst{from{opacity:1;}to{transform:scale(5.5);opacity:0;}}
-@keyframes osKb{from{transform:scale(1.05);}to{transform:scale(1.22) translate3d(-1.5%,-1%,0);}}
-@keyframes osPulseA{0%,100%{opacity:.25;}50%{opacity:.9;}}
-@keyframes osPulseB{0%,100%{opacity:.9;}50%{opacity:.25;}}
-@keyframes osAutoHide{to{opacity:0;visibility:hidden;pointer-events:none;}}
-@media (prefers-reduced-motion:reduce){#owner-splash .os-bg,#owner-splash .os-glow{animation:none!important;}}
-
-/* ---------- kartu status akun di Beranda ---------- */
-.status-card{position:relative;overflow:hidden;border-radius:18px;padding:16px;margin:14px 0;background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--accent) 7%,var(--card)));border:1px solid var(--line);}
-body.premium .status-card{background:linear-gradient(145deg,color-mix(in srgb,var(--pa) 14%,var(--card)),var(--card));border-color:color-mix(in srgb,var(--pa) 40%,var(--line));}
-.status-card .sc-top{display:flex;align-items:center;gap:12px;}
-.status-card .sc-avatar{width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;}
-body.premium .status-card .sc-avatar{box-shadow:0 0 0 3px var(--pa),0 0 16px var(--pa);}
-.status-card .sc-name{font-weight:700;font-size:16px;}
-.status-card .sc-sub{font-size:12px;color:var(--ink-soft,#8892B0);margin-top:1px;}
-.status-card .sc-plan{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.03em;padding:4px 10px;border-radius:999px;white-space:nowrap;background:#2A2F45;color:#AEB4CF;}
-.status-card.plan-basic .sc-plan{background:color-mix(in srgb,var(--pa,#8B7BFF) 25%,#2A2F45);color:#fff;}
-.status-card.plan-pro .sc-plan,.status-card.plan-owner .sc-plan{background:linear-gradient(90deg,#F5A623,#FFD76A);color:#2a1a00;}
-.status-card .sc-pills{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-.status-card .pill{font-size:11px;padding:5px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--ink-soft,#8892B0);display:flex;align-items:center;gap:5px;}
-.status-card .pill b{color:var(--ink,#1B1830);}
-.status-card .sc-guest-btn{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);background:none;border:none;padding:0;}
-
-/* ---------- layar maintenance (diatur Owner dari /admin) ---------- */
-#maint-screen{display:none;position:fixed;inset:0;z-index:200000;background:#0f0c1d;color:#fff;align-items:center;justify-content:center;padding:28px;text-align:center;}
-#maint-screen.on{display:flex;}
-#maint-screen .mt-box{max-width:380px;}
-#maint-screen .mt-ico{font-size:56px;margin-bottom:14px;}
-#maint-screen h2{margin:0 0 10px;font-size:22px;}
-#maint-screen p{margin:0;font-size:15px;line-height:1.6;opacity:.85;white-space:pre-wrap;}
-#maint-screen .mt-sub{margin-top:18px;font-size:13px;opacity:.7;}
-#maint-screen .mt-wa{display:none;margin-top:10px;padding:13px 22px;border-radius:12px;font-weight:700;font-size:14px;background:#25d366;color:#06220f;text-decoration:none;}
-#maint-screen .mt-wa.on{display:inline-block;}
-#maint-screen .mt-retry{margin-top:22px;padding:12px 22px;border:none;border-radius:12px;font-weight:700;font-size:14px;background:#6c4bff;color:#fff;cursor:pointer;}
-
-/* ---------- Customer Service ---------- */
-.cs-head{display:flex;align-items:center;gap:10px;}
-.cs-sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
-.cs-sub.live{color:#1e9e62;font-weight:700;}
-.cs-warn{margin:10px 0;padding:10px 12px;border-radius:12px;font-size:12.5px;line-height:1.5;background:color-mix(in srgb,#F5A623 18%,var(--card));border:1px solid color-mix(in srgb,#F5A623 45%,transparent);color:var(--ink);}
-.cs-list{height:calc(100vh - 330px);min-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;}
-.cs-msg{max-width:86%;padding:9px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);align-self:flex-start;word-break:break-word;font-size:14px;line-height:1.5;white-space:pre-wrap;}
-.cs-msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink,#fff);border-color:transparent;}
-.cs-msg.admin{border-color:#1e9e62;}
-.cs-who{font-size:11px;font-weight:800;color:var(--accent);margin-bottom:2px;}
-.cs-msg.admin .cs-who{color:#1e9e62;}
-.cs-time{font-size:10px;opacity:.55;margin-left:6px;font-weight:500;}
-.cs-empty{margin:auto;text-align:center;color:var(--ink-soft);font-size:13px;line-height:1.6;}
-.cs-empty b{display:block;color:var(--ink);font-size:16px;margin:8px 0 2px;}
-.cs-foot{margin-top:10px;}
-.cs-foot .cs-hint{font-size:12px;color:var(--ink-soft);text-align:center;margin-bottom:8px;}
-.cs-sheet{position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;background:rgba(0,0,0,.5);}
-.cs-sheet.hidden{display:none !important;}
-.cs-panel{width:100%;max-height:82vh;overflow-y:auto;background:var(--card);border-radius:22px 22px 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);}
-.cs-panel h3{margin:4px 6px 10px;font-size:16px;}
-.cs-topic{display:flex;width:100%;text-align:left;align-items:center;justify-content:space-between;gap:8px;padding:13px 12px;border-radius:12px;background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;font-weight:600;}
-.cs-topic.live{color:#F5A623;}
-.cs-topic span:last-child{color:var(--ink-soft);}
-
-/* ---------- AllTools Shop ---------- */
-.shop-head{display:flex;align-items:center;gap:10px;padding:16px 0 4px;}
-.shop-head .grow{flex:1;min-width:0;}
-.shop-head h2{font-size:18px;margin:0;}
-.shop-sub{font-size:12px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.shop-hist-btn{width:40px;height:40px;border-radius:12px;font-size:18px;background:var(--card);border:1px solid var(--line);color:var(--ink);padding:0;}
-.shop-sec{margin:16px 2px 6px;font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--ink-soft);text-transform:uppercase;}
-.shop-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:10px;padding:12px;border-radius:18px;background:var(--card);border:1px solid var(--line);color:var(--ink);}
-.shop-card .si{width:50px;height:50px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex:0 0 auto;background:color-mix(in srgb,var(--accent) 16%,var(--card));}
-.shop-card .sb{min-width:0;flex:1;}
-.shop-card .sn{font-weight:800;font-size:15px;}
-.shop-card .sd{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
-.shop-card .sp{font-weight:800;font-size:14px;color:#F5A623;text-align:right;white-space:nowrap;}
-.shop-card .sp small{display:block;font-size:10px;font-weight:600;color:var(--ink-soft);}
-.shop-card.owned{opacity:.75;}
-.shop-card.owned .sp{color:#1e9e62;}
-.shop-hist{margin-top:10px;}
-.shop-hist .row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
-.shop-st{font-size:11px;padding:2px 8px;border-radius:999px;color:#fff;white-space:nowrap;}
-.shop-detail{padding:6px 6px 2px;text-align:center;}
-.shop-detail .big{font-size:44px;}
-.shop-detail h3{margin:6px 0 4px;font-size:18px;}
-.shop-detail p{margin:0 0 8px;font-size:13px;color:var(--ink-soft);line-height:1.5;}
-.shop-detail .price{font-size:22px;font-weight:800;color:#F5A623;margin:6px 0 12px;}
+  /* ---------- responsive (tablet & phone) ---------- */
+  @media (max-width: 900px){
+    body{flex-direction:column;}
+    .sidebar{
+      width:100%;height:auto;flex-direction:row;align-items:center;
+      overflow-x:auto;padding:14px 16px;gap:20px;border-right:none;
+      border-bottom:1px solid var(--border);
+    }
+    .nav{flex-direction:row;gap:2px;}
+    .nav a{white-space:nowrap;padding:8px 10px;font-size:13px;}
+    .device-list{margin-top:0;flex-direction:row;align-items:center;}
+    .device-list-label{display:none;}
+    .device-item{white-space:nowrap;}
+    .main{padding:20px;}
+    .hero{flex-direction:column;height:auto;}
+    .hero-canvas{height:220px;width:100%;}
+    .hero-side{width:100%;border-left:none;border-top:1px solid var(--border);}
+    .grid{grid-template-columns:1fr;}
+    .panel-row{grid-template-columns:1fr;}
+    .topbar{flex-wrap:wrap;gap:12px;}
+  }
+  @media (max-width: 480px){
+    .main{padding:16px;}
+    .topbar h1{font-size:20px;}
+    .hero-canvas{height:180px;}
+  }
 </style>
-<link rel="preload" as="image" href="loading.webp">
 </head>
 <body>
-<div class="cs-sheet hidden" id="cs-sheet" onclick="if(event.target===this)csCloseSheet()">
-  <div class="cs-panel">
-    <h3>AllTools Assistant · Pilih topik bantuan</h3>
-    <div id="cs-topics"></div>
-  </div>
-</div>
-<div class="cs-sheet hidden" id="bot-sheet" onclick="if(event.target===this)botCloseCfg()">
-  <div class="cs-panel" id="bot-cfg"></div>
-</div>
-<div class="cs-sheet hidden" id="shop-sheet" onclick="if(event.target===this)shopCloseSheet()">
-  <div class="cs-panel">
-    <div class="shop-detail" id="shop-detail"></div>
-  </div>
-</div>
-<div id="maint-screen" role="alert">
-  <div class="mt-box">
-    <div class="mt-ico">🛠️</div>
-    <h2>Sedang Maintenance</h2>
-    <p id="mt-text">Kami sedang melakukan perbaikan.</p>
-    <p class="mt-sub">Silakan coba lagi nanti.<span id="mt-wa-hint"> Join saluran WhatsApp untuk info lebih lanjut.</span></p>
-    <a id="mt-wa" class="mt-wa" href="#" target="_blank" rel="noopener">💬 Join saluran WhatsApp</a><br>
-    <button class="mt-retry" onclick="checkMaintenance(true)">Coba lagi</button>
-  </div>
-</div>
-<div id="owner-splash" role="status" aria-live="polite">
-  <div class="os-bg"></div>
-  <div class="os-glow"></div><div class="os-glow r"></div>
-  <div class="os-shade"></div>
-  <canvas id="os-cv"></canvas>
-  <div class="rasengan" id="os-ras"><video id="os-rasv" muted loop playsinline preload="auto"></video></div>
-  <div class="os-ui"><div class="os-wrap">
-    <div class="os-hello" id="os-hello">👑 Selamat datang, Owner</div>
-    <div class="os-row"><span class="os-title">LOADING...</span><span class="os-pct" id="os-pct">0%</span></div>
-    <div class="os-bar"><div class="os-fill" id="os-fill"></div></div>
-    <div class="os-quote">Jangan menyerah, bahkan jika dunia menentangmu.<i>- Uchiha Sasuke -</i></div>
-  </div></div>
-</div>
-<script>try{var _u=JSON.parse(localStorage.getItem('alltools_user')),_t=JSON.parse(localStorage.getItem('alltools_token'));if(_u&&_t&&_u.plan==='owner')document.documentElement.classList.add('owner-splash-on');}catch(e){}</script>
 
+  <div class="login-screen" id="login-screen">
+    <div class="login-card" id="signup-card" style="display:none;">
+      <div class="brand-mark">G</div>
+      <h2>Buat akun owner</h2>
+      <p>Ini pertama kali dibuka di HP ini — buat akun owner untuk masuk ke dashboard.</p>
+      <form id="signup-form">
+        <div class="field">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" placeholder="nama@email.com" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="signup-pass">Kata sandi</label>
+          <input type="password" id="signup-pass" placeholder="Minimal 6 karakter" autocomplete="new-password" required minlength="6">
+          <div class="field-error" id="signup-error">Isi email dan kata sandi (min. 6 karakter).</div>
+        </div>
+        <button type="submit" class="login-btn">Buat akun &amp; masuk</button>
+      </form>
+      <div class="login-foot">Akun disimpan di HP ini saja.</div>
+    </div>
 
-
-<div id="splash">
-  <div class="cube-scene">
-    <div class="cube">
-      <div class="cube-face front">A</div>
-      <div class="cube-face back">T</div>
-      <div class="cube-face right">⚡</div>
-      <div class="cube-face left">⚡</div>
-      <div class="cube-face top">★</div>
-      <div class="cube-face bottom">★</div>
+    <div class="login-card" id="login-card" style="display:none;">
+      <div class="brand-mark">G</div>
+      <h2>Masuk sebagai owner</h2>
+      <p>Khusus orang tua/pemilik akun yang terdaftar di HP ini.</p>
+      <form id="login-form">
+        <div class="field">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="nama@email.com" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="login-pass">Kata sandi</label>
+          <input type="password" id="login-pass" placeholder="Masukkan kata sandi" autocomplete="current-password" required>
+          <div class="field-error" id="login-error">Email atau kata sandi salah.</div>
+        </div>
+        <button type="submit" class="login-btn">Masuk</button>
+      </form>
+      <div class="login-foot"><a href="#" id="reset-account-link" style="color:var(--text-muted);text-decoration:underline;">Lupa akun? Hapus &amp; buat ulang</a></div>
     </div>
   </div>
-  <div class="splash-brand">All<span>Tools</span></div>
-  <div class="splash-sub">Memuat...</div>
-</div>
 
-<div class="shell">
-  <header class="top">
-    <div class="brand">All<span>Tools</span><span class="plan-chip" id="brand-chip"></span></div>
-  </header>
+  <div class="app-content" id="app-content">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">G</div>
+      <span>Guardline</span>
+    </div>
+    <nav class="nav">
+      <a href="#" class="active"><span class="dot on"></span>Dashboard</a>
+      <a href="#"><span class="dot"></span>Lokasi</a>
+      <a href="#"><span class="dot"></span>Screen time</a>
+      <a href="#"><span class="dot"></span>Apk terpasang</a>
+      <a href="#"><span class="dot"></span>Riwayat</a>
+    </nav>
+    <div class="device-list">
+      <div class="device-list-label">HP terhubung</div>
+      <div class="device-item selected">HP Kaia</div>
+      <div class="device-item">HP Bimo</div>
+    </div>
+    <button class="lock-btn" id="logout-btn" style="background:transparent;color:var(--text-muted);border-color:var(--border);">Keluar</button>
+  </aside>
 
-  <main>
-    <!-- HOME -->
-    <section id="page-home">
-      <div class="hero-banner">
-        <video id="hero-video" src="banner-gojo.mp4" poster="banner-gojo-poster.jpg" muted loop autoplay playsinline preload="metadata" disablepictureinpicture></video>
-        <div class="hero-shade"></div>
-        <div class="jp-text"><div><div class="jp-title">AllTools</div><div class="jp-date" id="jp-date"></div></div><div class="jp-time" id="jp-time"></div></div>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>HP Kaia</h1>
+        <p>Terakhir sinkron 2 menit lalu</p>
       </div>
+      <div class="status-pill"><span class="dot"></span>Online</div>
+    </div>
 
-      <a class="marquee-wrap" href="https://whatsapp.com/channel/0029VbCCOOtHFxP9bBqnku04" target="_blank" rel="noopener">
-        <div class="marquee-track">
-          <span>🎉 Diskon spesial Premium — gabung saluran WhatsApp buat kode promo!</span>
-          <span>🎉 Diskon spesial Premium — gabung saluran WhatsApp buat kode promo!</span>
+    <div class="hero">
+      <div class="hero-canvas" id="canvas-wrap"></div>
+      <div class="hero-side">
+        <div>
+          <div class="label">Status HP</div>
+          <div class="value" id="lock-value">Terbuka</div>
+          <div class="sub">Seret model untuk memutar</div>
         </div>
-      </a>
-
-      <div class="status-card" id="home-status-card"></div>
-
-      <div class="home-sec">STATUS</div>
-      <div class="story-row" id="story-row"></div>
-
-      <div class="home-sec">NOW PLAYING</div>
-      <button class="home-row home-music" onclick="stMusicRow()"><span class="hi">🎵</span><span style="min-width:0;flex:1"><div class="ht" id="st-music-t" style="color:var(--ink-soft)">Belum ada lagu</div><div class="hs" id="st-music-s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Pasang lagu di status kamu</div></span><span class="hc">›</span></button>
-
-      <button class="home-row home-chat" onclick="showPage('chat')"><span class="hi">🌐</span><span style="min-width:0;flex:1"><div class="ht">Global Chat</div><div class="hs" id="gc-preview" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Belum ada pesan</div></span><span class="hc">›</span></button>
-      <button class="home-row home-chat" onclick="showPage('bantuan')"><span class="hi">🎧</span><span style="min-width:0;flex:1"><div class="ht">Customer Service</div><div class="hs">Bantuan bot &amp; chat dengan admin</div></span><span class="hc">›</span></button>
-      <button class="home-row home-chat" onclick="showPage('shop')"><span class="hi">🛒</span><span style="min-width:0;flex:1"><div class="ht">AllTools Shop</div><div class="hs">Premium, bot, role &amp; item lainnya</div></span><span class="hc">›</span></button>
-      <a class="fab-help" href="https://whatsapp.com/channel/0029VbCCOOtHFxP9bBqnku04" target="_blank" rel="noopener" aria-label="Bantuan">🎧</a>
-
-      <div class="paste-bar">
-        <input id="quick-link" type="text" placeholder="Tempel link TikTok / IG / video di sini">
-        <button onclick="quickDownload()">Cek</button>
+        <button class="lock-btn" id="lock-btn">Kunci HP sekarang</button>
       </div>
+      <div class="hero-hint">Model 3D interaktif — bukan foto HP asli</div>
+    </div>
 
-      <div class="section-label">Fitur utama</div>
-      <div class="grid">
-        <button class="tile" onclick="showPage('downloader')">
-          <div class="ic">&#8681;</div>
-          <b>Download video</b>
-          <small>Tanpa watermark</small>
-        </button>
-        <button class="tile" onclick="showPage('ai')">
-          <div class="ic amber">&#9998;</div>
-          <b>Asisten AI</b>
-          <small>Tanya & bantu tugas</small>
-        </button>
-        <button class="tile" onclick="showPage('enhance')">
-          <div class="ic">&#10022;</div>
-          <b>HD enhancer</b>
-          <small>Perjelas foto</small>
-        </button>
-        <button class="tile" onclick="showPage('convert')">
-          <div class="ic amber">&#8646;</div>
-          <b>Convert & compress</b>
-          <small>Ubah format & ukuran</small>
-        </button>
-        <button class="tile" onclick="showPage('publish')">
-          <div class="ic">&#127760;</div>
-          <b>Publish ke Web</b>
-          <small>👑 Premium — hosting gratis</small>
-        </button>
-        <button class="tile" onclick="showPage('bots')">
-          <div class="ic amber">&#129302;</div>
-          <b>Sewa Bot WhatsApp</b>
-          <small>Pilih fitur, dapet API key</small>
-        </button>
-        <button class="tile" onclick="showPage('antimaling')">
-          <div class="ic" style="background:#1E293B;color:#00E5A8;">&#128274;</div>
-          <b>AntiMaling</b>
-          <small>Lacak & kunci HP kalau hilang</small>
-        </button>
-        <button class="tile" onclick="showPage('videoeditor')">
-          <div class="ic">&#127909;</div>
-          <b>Edit Video</b>
-          <small>Trim, teks, filter</small>
-        </button>
-        <button class="tile" onclick="showPage('pulsa')">
-          <div class="ic amber">&#128241;</div>
-          <b>Pulsa & Paket Data</b>
-          <small>Semua operator</small>
-        </button>
-      </div>
-    </section>
-
-    <!-- DOWNLOADER -->
-    <section id="page-downloader" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Download video</h2>
-      </div>
-      <div id="plan-badge-downloader"></div>
+    <div class="grid">
       <div class="card">
-        <label class="field-label">Link video</label>
-        <input id="dl-link" type="url" placeholder="https://vt.tiktok.com/...">
-        <div class="err" id="dl-err">Tempel link video dulu ya.</div>
-        <button class="btn" onclick="runDownload()" id="dl-btn">Ambil video</button>
-        <div class="note">
-          Bagian ini butuh server backend milikmu untuk extract link asli dari TikTok/IG/CapCut (mis. pakai yt-dlp). Tombol di atas sudah tersambung ke pemanggilan API — tinggal ganti alamat backend-nya di kode.
-        </div>
-      </div>
-      <div class="result" id="dl-result">
-        <div class="result-info"><span id="dl-status"></span></div>
-      </div>
-    </section>
-
-    <!-- AI -->
-    <section id="page-ai" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Asisten AI</h2>
-      </div>
-      <div id="plan-badge-ai"></div>
-      <div class="card">
-        <div class="chat-box" id="chat-box">
-          <div class="msg ai">Hai, mau tanya apa atau dibantu tugas apa hari ini?</div>
-        </div>
-        <div class="chat-input-row">
-          <input id="chat-input" type="text" placeholder="Tulis pesan..." onkeydown="if(event.key==='Enter')sendChat()">
-          <button onclick="sendChat()">&#8594;</button>
-        </div>
-        <div class="note">
-          Ini masih mode demo (jawaban belum dari AI asli). Sambungkan tombol kirim ke API AI pilihanmu di backend supaya jawabannya nyata.
-        </div>
-      </div>
-    </section>
-
-    <!-- ENHANCER -->
-    <section id="page-enhance" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>HD enhancer</h2>
-      </div>
-      <div id="plan-badge-enhance"></div>
-      <div class="card">
-        <label class="field-label">Pilih foto</label>
-        <input type="file" accept="image/*" id="enhance-file" onchange="runEnhance()">
-        <div class="err" id="enhance-err">Pilih foto dulu ya.</div>
-        <div class="slide-wrap" id="enhance-wrap">
-          <img id="enhance-out">
-        </div>
-        <div class="note">
-          Ini penajaman ringan yang jalan langsung di HP (kontras & ketajaman lebih baik), bukan upscale AI penuh. Untuk hasil upscale sekelas Remini, sambungkan ke server dengan model Real-ESRGAN.
-        </div>
-      </div>
-    </section>
-
-    <!-- CONVERT -->
-    <section id="page-convert" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Convert & compress</h2>
-      </div>
-      <div id="plan-badge-convert"></div>
-      <div class="card">
-        <label class="field-label">Pilih foto</label>
-        <input type="file" accept="image/*" id="conv-file">
-        <label class="field-label" style="margin-top:14px;">Format keluaran</label>
-        <select id="conv-format">
-          <option value="image/jpeg">JPG</option>
-          <option value="image/png">PNG</option>
-          <option value="image/webp">WEBP</option>
-        </select>
-        <label class="field-label" style="margin-top:14px;">Kualitas: <span id="conv-q-val">80</span>%</label>
-        <input type="range" id="conv-q" min="10" max="100" value="80" oninput="document.getElementById('conv-q-val').textContent=this.value">
-        <div class="err" id="conv-err">Pilih foto dulu ya.</div>
-        <button class="btn" onclick="runConvert()">Proses</button>
-        <div class="note">
-          Convert/compress foto ini jalan langsung di HP, tanpa server. Untuk video, prosesnya perlu FFmpeg di backend karena terlalu berat buat browser.
-        </div>
-      </div>
-      <div class="result" id="conv-result">
-        <img id="conv-out">
-        <div class="result-info">
-          <span id="conv-size"></span>
-          <button class="btn secondary" style="width:auto;margin:0;padding:8px 14px;" id="conv-dl">Unduh</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- PUBLISH -->
-    <section id="page-publish" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Publish ke Web</h2>
+        <div class="label">Screen time hari ini</div>
+        <div class="big">3j 42m</div>
+        <div class="bar-track"><div class="bar-fill" style="width:62%"></div></div>
+        <div class="foot">Batas harian 6j</div>
       </div>
       <div class="card">
-        <label class="field-label">File HTML (halaman web kamu)</label>
-        <input type="file" accept=".html,text/html" id="publish-file">
-        <label class="field-label" style="margin-top:14px;">Nama alamat (slug)</label>
-        <input type="text" id="publish-slug" placeholder="contoh: toko-baju-saya">
-        <div class="err" id="publish-err"></div>
-        <button class="btn" onclick="runPublish()" id="publish-btn">Publish</button>
-        <div class="note">Fitur ini khusus Premium/Owner. Filenya harus satu file HTML utuh (CSS & JS boleh nempel di dalam file yang sama).</div>
-      </div>
-      <div class="result" id="publish-result">
-        <div class="result-info">
-          <span id="publish-status"></span>
-        </div>
-      </div>
-      <div class="section-label">Website kamu yang sudah dipublish</div>
-      <div id="publish-list"></div>
-    </section>
-
-    <!-- SEWA BOT -->
-    <section id="page-bots" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Sewa Bot WhatsApp</h2>
-      </div>
-      <div id="bot-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px"></div>
-      <div id="gs-status"></div>
-      <div class="card">
-        <div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700">SENDER SOURCE</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 4px">
-          <button type="button" id="src-personal" onclick="botSetMode('personal')" style="padding:14px 8px;border-radius:14px;font-weight:800;font-size:13px;letter-spacing:.06em;cursor:pointer">👤<br>PERSONAL</button>
-          <button type="button" id="src-global" onclick="botSetMode('global')" style="padding:14px 8px;border-radius:14px;font-weight:800;font-size:13px;letter-spacing:.06em;cursor:pointer">🔒<br>GLOBAL</button>
-        </div>
-        <div class="note" id="src-note" style="margin-bottom:6px"></div>
-        <label class="field-label" style="margin-top:10px">Nama bot</label>
-        <input type="text" id="bot-name" placeholder="contoh: Bot Toko Baju">
-        <label class="field-label" style="margin-top:14px;">Pilih fitur</label>
-        <div id="bot-features-list" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;"></div>
-        <button class="btn secondary" type="button" style="margin-top:8px;width:auto;padding:6px 14px" onclick="document.querySelectorAll('.bot-feature-checkbox').forEach(c=>c.checked=true)">Pilih semua fitur</button>
-        <label class="field-label" style="margin-top:14px;">Durasi sewa</label>
-        <select id="bot-duration">
-          <option value="7">1 minggu (7 hari)</option>
-          <option value="30" selected>1 bulan (30 hari)</option>
-        </select>
-        <div class="err" id="bot-err"></div>
-        <button class="btn" onclick="runRentBot()" id="bot-rent-btn">Sewa Bot</button>
-        <div class="note">Bayar lewat QRIS atau DANA. Setelah pembayaranmu dikonfirmasi admin (biasanya beberapa menit), bot aktif. Tinggal pasang sender (nomor WhatsApp kamu sendiri) di bawah, lalu bot langsung bisa dipakai.</div>
-      </div>
-      <div class="section-label">Bot kamu</div>
-      <div id="bot-list"></div>
-    </section>
-
-    <!-- MANAGE SENDER -->
-    <section id="page-sender" class="hidden">
-      <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-top:12px;position:relative">
-        <button class="back-btn" style="border:none;background:transparent;color:var(--accent);font-size:20px" onclick="showPage('bots')" aria-label="Kembali">&#8249;</button>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:19px;font-weight:800">Manage Sender</div>
-          <div id="sender-sub" style="font-size:13px;color:var(--ink-soft);margin-top:2px">Personal · pair &amp; QR</div>
-        </div>
-        <button class="back-btn" style="border:none;background:transparent;font-size:22px" onclick="botSenderMenu()" aria-label="Menu">&#9776;</button>
-        <div id="sender-menu" class="card hidden" style="position:absolute;right:10px;top:58px;z-index:5;padding:6px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.35)">
-          <button type="button" class="btn secondary" style="width:100%;margin:0 0 6px" onclick="botSenderMenu();botSenderReload()">Muat ulang status</button>
-          <button type="button" class="btn secondary" style="width:100%;margin:0" onclick="botSenderMenu();botToggleInfo(true)">Info Bot</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:12px"><div id="sender-box"></div></div>
-      <button type="button" class="card" id="infobot-btn" onclick="botToggleInfo()" style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;margin-top:12px;cursor:pointer;color:var(--ink)">
-        <span style="font-size:22px">ℹ️</span>
-        <span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:15px">Info Bot</span><span style="display:block;font-size:12px;color:var(--ink-soft);margin-top:2px">Softban, device target, tips kirim</span></span>
-        <span id="infobot-arrow" style="font-size:20px;color:var(--ink-soft)">›</span>
-      </button>
-      <div id="infobot-panel" class="card hidden" style="margin-top:8px">
-        <div style="font-weight:800;font-size:13px">🛑 Softban</div>
-        <div class="note" style="margin:4px 0 10px">Softban = WhatsApp membatasi sementara kemampuan kirim nomor sender (bukan banned permanen). Tandanya: pesan ke kontak baru tertahan 1 centang, atau pesan ke grup tidak terkirim. Biasanya dipicu kirim banyak pesan identik dengan cepat, ke orang yang tidak menyimpan nomormu, atau nomor baru yang langsung dipakai massal. Kalau kena: istirahatkan nomor 24–72 jam, jangan kirim ulang atau pasang ulang berkali-kali.</div>
-        <div style="font-weight:800;font-size:13px">📱 Device target</div>
-        <div class="note" style="margin:4px 0 10px">Sender tertaut sebagai perangkat tertaut di WhatsApp. HP utama nomor itu harus tetap punya internet dan dibuka sesekali, karena WhatsApp melepas perangkat tertaut kalau HP utama tidak online sekitar 14 hari. Pakai WhatsApp versi terbaru, dan satu nomor hanya untuk satu bot. Tampilan pesan (format tebal/miring, media) bisa sedikit beda di versi lama atau beda OS penerima (Android/iPhone).</div>
-        <div style="font-weight:800;font-size:13px">📤 Tips kirim</div>
-        <div class="note" style="margin:4px 0 0">• Beri jeda antar pesan dan kirim bertahap, jangan sekaligus.<br>• Kirim ke kontak yang mengenalmu atau sudah setuju, dan beri cara untuk berhenti.<br>• Variasikan isi pesan, hindari link yang sama berulang-ulang.<br>• Nomor baru: pakai chat biasa 2–3 hari dulu sebelum dipakai bot.<br>• Jangan pasang nomor utama yang penting.<br>• Kalau banyak pesan tertunda, hentikan dulu dan tunggu.</div>
-      </div>
-    </section>
-
-    <!-- ANTIMALING -->
-    <section id="page-antimaling" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>AntiMaling</h2>
+        <div class="label">Lokasi terakhir</div>
+        <div class="big" style="font-size:18px;">SDN 04, 350m</div>
+        <div class="foot">Diperbarui 2 menit lalu</div>
       </div>
       <div class="card">
-        <label class="field-label">Beli proteksi untuk HP baru</label>
-        <input type="text" id="am-name" placeholder="Nama HP, contoh: HP Utama">
-        <div class="err" id="am-err"></div>
-        <button class="btn" onclick="runBuyAm()" id="am-buy-btn">Beli Proteksi — <span id="am-price-label">Rp 49.000</span></button>
-        <div class="note">Sekali bayar, berlaku selamanya untuk 1 HP. Bayar lewat QRIS atau DANA, dikonfirmasi admin lalu kamu dapat kode pairing 6 digit untuk dimasukkan di apk AntiMaling.</div>
+        <div class="label">Mode aktif</div>
+        <div class="big" style="font-size:18px;">Jam belajar</div>
+        <div class="foot">Berakhir 20:00</div>
       </div>
-      <div class="section-label">HP kamu</div>
-      <div id="am-list"></div>
-    </section>
+    </div>
 
-    <!-- VIDEO EDITOR -->
-    <section id="page-videoeditor" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Edit Video</h2>
-      </div>
-
-      <div class="card">
-        <label class="field-label">Template siap pakai (opsional — isi otomatis di bawah)</label>
-        <div id="ve-template-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"></div>
-      </div>
-
-      <div class="card">
-        <label class="field-label">Video utama</label>
-        <input type="file" accept="video/*" id="ve-file1">
-
-        <label class="field-label" style="margin-top:14px;">Potong (trim) — opsional</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="ve-trim-start" placeholder="Mulai (detik), kosongkan = dari awal" style="flex:1;">
-          <input type="text" id="ve-trim-end" placeholder="Selesai (detik), kosongkan = sampai habis" style="flex:1;">
+    <div class="panel-row">
+      <div class="panel">
+        <h3>Apk terpasang</h3>
+        <div class="app-row">
+          <div class="app-name"><div class="app-icon">Yt</div>YouTube Kids</div>
+          <div class="toggle on"></div>
         </div>
-
-        <label class="field-label" style="margin-top:14px;">Gabung video kedua — opsional</label>
-        <input type="file" accept="video/*" id="ve-file2">
-        <div class="note" style="margin-top:6px;">Video kedua bakal disambung di belakang video utama (setelah dipotong).</div>
-
-        <label class="field-label" style="margin-top:14px;">Tambah teks — opsional</label>
-        <input type="text" id="ve-text" placeholder="Teks yang mau ditampilin di video">
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <select id="ve-text-pos" style="flex:1;">
-            <option value="top">Atas</option>
-            <option value="middle">Tengah</option>
-            <option value="bottom" selected>Bawah</option>
-          </select>
-          <input type="color" id="ve-text-color" value="#ffffff" style="width:52px;padding:2px;">
+        <div class="app-row">
+          <div class="app-name"><div class="app-icon">Ig</div>Instagram</div>
+          <div class="toggle on"></div>
         </div>
-
-        <label class="field-label" style="margin-top:14px;">Filter warna</label>
-        <select id="ve-filter">
-          <option value="none">Normal (tanpa filter)</option>
-          <option value="vivid">Vivid (warna lebih tajam)</option>
-          <option value="bw">Hitam Putih</option>
-          <option value="warm">Warm (hangat)</option>
-          <option value="cool">Cool (dingin)</option>
-          <option value="vintage">Vintage</option>
-        </select>
-
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);margin-top:14px;">
-          <input type="checkbox" id="ve-sharpen" style="width:auto;">
-          ✨ Perjelas video (sharpen/HD)
-        </label>
-
-        <div class="err" id="ve-err"></div>
-        <button class="btn" onclick="runVideoEdit()" id="ve-process-btn">Proses Video</button>
-        <div class="note">
-          Pemrosesan video jalan langsung di HP kamu (gak lewat server). Pertama kali dipakai, app perlu download "mesin" video (~25MB) — pakai WiFi disarankan. Video yang agak panjang/besar bisa makan waktu beberapa menit dan bikin HP terasa berat sebentar, itu normal.
+        <div class="app-row">
+          <div class="app-name"><div class="app-icon">Ml</div>Mobile Legends</div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="app-row">
+          <div class="app-name"><div class="app-icon">Wa</div>WhatsApp</div>
+          <div class="toggle on"></div>
         </div>
       </div>
-
-      <div class="card hidden" id="ve-progress-card">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span class="spin" style="color:var(--accent);"></span>
-          <span id="ve-progress-text" style="font-size:13px;">Memuat mesin video...</span>
-        </div>
+      <div class="panel">
+        <h3>Jadwal blokir</h3>
+        <div class="schedule-row">Jam belajar <span class="time">13:00 – 15:00</span></div>
+        <div class="schedule-row">Jam makan malam <span class="time">18:00 – 19:00</span></div>
+        <div class="schedule-row">Jam tidur <span class="time">20:00 – 06:00</span></div>
       </div>
-
-      <div class="result" id="ve-result">
-        <video id="ve-output" controls style="width:100%;display:block;"></video>
-        <div class="result-info">
-          <span style="font-size:12px;color:var(--ink-soft);">Selesai diproses</span>
-          <a class="btn secondary" id="ve-download" style="width:auto;margin:0;padding:8px 14px;text-decoration:none;" download="hasil-edit.mp4">Unduh</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- PULSA & PAKET DATA -->
-    <section id="page-chat" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Global Chat</h2>
-      </div>
-      <div class="gc-list" id="gc-list"></div>
-      <div class="err" id="gc-err"></div>
-      <div class="gc-bar">
-        <input type="text" id="gc-input" maxlength="300" placeholder="Tulis pesan..." autocomplete="off" onkeydown="if(event.key==='Enter')gcSend()">
-        <button class="btn" style="width:auto;margin:0;padding:0 18px" onclick="gcSend()" id="gc-send">Kirim</button>
-      </div>
-    </section>
-
-    <section id="page-bantuan" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <div><h2>Customer Service</h2><div class="cs-sub" id="cs-sub">Asisten bot · pilih topik</div></div>
-      </div>
-      <div class="cs-warn">⚠️ Hati-hati penipuan. CS resmi tidak akan meminta password atau kode OTP, dan tidak memberi nomor rekening selain DANA / QRIS resmi yang tertera di halaman Premium.</div>
-      <div class="cs-list" id="cs-list"></div>
-      <div class="err" id="cs-err"></div>
-      <div class="cs-foot" id="cs-foot-bot">
-        <div class="cs-hint">Pilih topik bantuan — chat bebas setelah Live Admin aktif.</div>
-        <button class="btn" onclick="csOpenSheet()">🤖 Pilih topik bantuan</button>
-      </div>
-      <div class="cs-foot hidden" id="cs-foot-live">
-        <div class="gc-bar">
-          <input type="text" id="cs-input" maxlength="500" placeholder="Tulis pesan ke admin..." autocomplete="off" onkeydown="if(event.key==='Enter')csSend()">
-          <button class="btn" style="width:auto;margin:0;padding:0 18px" onclick="csSend()" id="cs-send">Kirim</button>
-        </div>
-        <button class="btn secondary" style="margin-top:8px;" onclick="csEnd()">Akhiri chat dengan admin</button>
-      </div>
-    </section>
-
-    <section id="page-shop" class="hidden">
-      <div class="shop-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <div class="grow"><h2>AllTools Shop</h2><div class="shop-sub" id="shop-sub">Beli · lanjut bayar</div></div>
-        <button class="shop-hist-btn" onclick="shopToggleHist()" title="Riwayat pembelian">🕘</button>
-      </div>
-      <div class="shop-hist hidden" id="shop-hist"></div>
-      <div class="err" id="shop-err"></div>
-      <div id="shop-list"></div>
-    </section>
-
-    <section id="page-pulsa" class="hidden">
-      <div class="page-head">
-        <button class="back-btn" onclick="showPage('home')">&#8592;</button>
-        <h2>Pulsa & Paket Data</h2>
-      </div>
-      <div class="card">
-        <label class="field-label">Nomor HP tujuan</label>
-        <input type="text" id="pulsa-phone" placeholder="08123456789" oninput="onPulsaPhoneChange()">
-        <div class="note" id="pulsa-operator-label" style="margin-top:6px;"></div>
-        <label class="field-label" style="margin-top:14px;">Pilih produk</label>
-        <select id="pulsa-product"></select>
-        <div class="err" id="pulsa-err"></div>
-        <button class="btn" onclick="runBuyPulsa()" id="pulsa-buy-btn">Beli Sekarang</button>
-        <div class="note">Setelah bayar, pesanan diproses manual oleh admin (biasanya beberapa menit, bukan instan).</div>
-      </div>
-      <div class="section-label">Riwayat pesanan</div>
-      <div id="pulsa-orders-list"></div>
-    </section>
-
-    <!-- HASIL -->
-    <section id="page-hasil" class="hidden">
-      <div class="page-head">
-        <h2>Riwayat hasil</h2>
-      </div>
-      <div id="hasil-list"></div>
-      <div class="note" id="hasil-empty">Belum ada riwayat. Coba download, enhance, atau convert dulu.</div>
-    </section>
-
-    <!-- PREMIUM -->
-    <section id="page-premium" class="hidden">
-      <div class="page-head">
-        <h2>Premium</h2>
-      </div>
-      <div class="card" id="premium-status-card" style="display:none;">
-        <b style="font-size:14px;">Kamu sudah premium</b>
-        <div class="note" id="premium-active-label"></div>
-      </div>
-      <div id="premium-plans">
-        <div class="card">
-          <b style="font-size:15px;">Basic</b>
-          <div style="font-size:22px;font-weight:700;margin:6px 0;"><span id="price-basic">Rp 39.000</span><span style="font-size:13px;font-weight:400;color:var(--ink-soft);">/bulan</span></div>
-          <div class="note" style="border-style:solid;">
-            Download tanpa batas & tanpa iklan · 100 chat AI/hari · Enhancer & convert unlimited · Upscale foto max HD
-          </div>
-          <button class="btn" onclick="activatePremium('Basic')">Pilih Basic</button>
-        </div>
-        <div class="card" style="border:2px solid var(--accent);">
-          <b style="font-size:15px;">Pro</b>
-          <div style="font-size:22px;font-weight:700;margin:6px 0;"><span id="price-pro">Rp 89.000</span><span style="font-size:13px;font-weight:400;color:var(--ink-soft);">/bulan</span></div>
-          <div class="note" style="border-style:solid;">
-            Semua di Basic · Chat AI unlimited · Upscale foto max 4K · Proses diprioritaskan
-          </div>
-          <button class="btn" onclick="activatePremium('Pro')">Pilih Pro</button>
-        </div>
-      </div>
-      <div class="note">Pembayaran lewat QRIS atau DANA. Paket aktif setelah pembayaranmu dikonfirmasi admin (biasanya beberapa menit).</div>
-    </section>
-
-    <!-- AKUN -->
-    <section id="page-akun" class="hidden">
-      <div class="page-head">
-        <h2>Akun</h2>
-      </div>
-      <div class="card" id="akun-logged-out">
-        <label class="field-label">Nama (buat daftar akun baru)</label>
-        <input type="text" id="akun-name" placeholder="Nama kamu">
-        <label class="field-label" style="margin-top:12px;">Email</label>
-        <input type="text" id="akun-email" placeholder="email@contoh.com">
-        <label class="field-label" style="margin-top:12px;">Password</label>
-        <input type="text" id="akun-password" placeholder="Minimal 6 karakter">
-        <div class="err" id="akun-err"></div>
-        <button class="btn" onclick="doLogin()" id="akun-login-btn">Masuk</button>
-        <button class="btn secondary" onclick="doRegister()" id="akun-register-btn">Daftar akun baru</button>
-      </div>
-      <div class="card hidden" id="akun-logged-in">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:600;" id="akun-avatar"></div>
-          <div>
-            <b id="akun-display-name" style="font-size:14px;"></b>
-            <div style="font-size:12px;color:var(--ink-soft);" id="akun-display-email"></div>
-          </div>
-        </div>
-        <div class="note" id="akun-plan-label" style="border-style:solid;"></div>
-        <button class="btn secondary" onclick="doLogout()">Keluar</button>
-      </div>
-      <details style="margin-top:16px;">
-        <summary style="font-size:12px;color:var(--ink-soft);cursor:pointer;">Pengaturan lanjutan</summary>
-        <div class="card" style="margin-top:8px;">
-          <label class="field-label">Alamat server backend</label>
-          <input type="text" id="backend-url-input" placeholder="https://alamat-backend-kamu.up.railway.app">
-          <button class="btn secondary" onclick="saveBackendUrl()">Simpan alamat server</button>
-          <div class="note" id="backend-url-status"></div>
-        </div>
-      </details>
-    </section>
-
+    </div>
   </main>
-
-  <nav class="bottom">
-    <div class="inner">
-      <button class="nav-btn active" data-p="home" onclick="showPage('home')">
-        <span class="navic">&#8962;</span>Beranda
-      </button>
-      <button class="nav-btn" data-p="hasil" onclick="showPage('hasil')">
-        <span class="navic">&#128193;</span>Hasil
-      </button>
-      <button class="nav-btn" data-p="premium" onclick="showPage('premium')">
-        <span class="navic">&#128081;</span>Premium
-      </button>
-      <button class="nav-btn" data-p="akun" onclick="showPage('akun')">
-        <span class="navic">&#128100;</span>Akun
-      </button>
-    </div>
-  </nav>
-</div>
-
-<script>
-const ALL_PAGES=['home','downloader','ai','enhance','convert','publish','bots','sender','antimaling','videoeditor','pulsa','hasil','premium','akun','chat','bantuan','shop'];
-function showPage(p){
-  ALL_PAGES.forEach(id=>{
-    document.getElementById('page-'+id).classList.toggle('hidden', id!==p);
-  });
-  document.querySelectorAll('.nav-btn').forEach(b=>{
-    b.classList.toggle('active', b.dataset.p===p);
-  });
-  window.scrollTo(0,0);
-  if(p==='chat'&&typeof gcOpen==='function') gcOpen();
-  if(p==='hasil') renderHistory();
-  if(p==='premium') renderPremiumPage();
-  if(p==='akun') renderAkunPage();
-  if(p==='bantuan') csOpen();
-  if(p==='shop') renderShopPage();
-  if(p==='publish') renderPublishPage();
-  if(p==='bots') renderBotsPage();
-  if(p==='antimaling') renderAmPage();
-  if(p==='home') { try{ renderHomeStatusCard(); }catch(e){} try{ stLoad(); }catch(e){} }
-  if(['downloader','ai','enhance','convert'].includes(p)) renderPlanBadge(p);
-  if(p==='videoeditor') renderVeTemplates();
-  if(p==='pulsa') renderPulsaPage();
-}
-
-/* ---------- storage helpers ---------- */
-function store(key, fallback){
-  try{ const v=JSON.parse(localStorage.getItem(key)); return v==null?fallback:v; }catch(e){ return fallback; }
-}
-function setStore(key, val){
-  try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){}
-  if(key==='alltools_user'||key==='alltools_token'){ try{ applyPremiumTheme(); }catch(e){} try{ renderHomeStatusCard(); }catch(e){} }
-}
-
-/* ---------- backend connection ---------- */
-const DEFAULT_BACKEND_URL='https://alltools-backend-production.up.railway.app';
-function getBackendUrl(){ return store('alltools_backend_url', DEFAULT_BACKEND_URL); }
-function saveBackendUrl(){
-  const v=document.getElementById('backend-url-input').value.trim().replace(/\/$/,'') || DEFAULT_BACKEND_URL;
-  setStore('alltools_backend_url', v);
-  document.getElementById('backend-url-status').textContent = 'Alamat server disimpan: '+v;
-}
-function getToken(){ return store('alltools_token', null); }
-/* ---------- mode maintenance ---------- */
-function showMaintenance(msg, link){
-  try{ if((store('alltools_user',null)||{}).plan==='owner') return; }catch(e){}
-  const el=document.getElementById('maint-screen'); if(!el) return;
-  if(msg) document.getElementById('mt-text').textContent=msg;
-  const wa=document.getElementById('mt-wa'), hint=document.getElementById('mt-wa-hint');
-  if(link && /^https:\/\//.test(link)){ wa.href=link; wa.classList.add('on'); hint.style.display=''; }
-  else { wa.classList.remove('on'); hint.style.display='none'; }
-  el.classList.add('on');
-}
-function hideMaintenance(){ const el=document.getElementById('maint-screen'); if(el) el.classList.remove('on'); }
-async function checkMaintenance(manual){
-  try{
-    const r=await fetch(getBackendUrl()+'/api/maintenance',{cache:'no-store'});
-    const d=await r.json();
-    if(d&&d.on) showMaintenance(d.message, d.link); else hideMaintenance();
-  }catch(e){ if(manual) alert('Belum bisa terhubung ke server. Coba lagi sebentar.'); }
-}
-document.addEventListener('DOMContentLoaded',()=>{ checkMaintenance(); setInterval(checkMaintenance,60000); });
-
-async function api(path, opts={}){
-  const base=getBackendUrl();
-  if(!base) throw new Error('no-backend');
-  const headers=Object.assign({'Content-Type':'application/json'}, opts.headers||{});
-  const token=getToken();
-  if(token) headers['Authorization']='Bearer '+token;
-  const r=await fetch(base+path, Object.assign({}, opts, {headers}));
-  let data={};
-  try{ data=await r.json(); }catch(e){}
-  if(r.status===503&&data.maintenance){ showMaintenance(data.error, data.link); }
-  if(!r.ok) throw new Error(data.error || ('HTTP '+r.status));
-  return data;
-}
-
-/* ---------- local-only quota for client-side features (enhance/convert) ---------- */
-const LOCAL_LIMITS={ enhance: 5, convert: 9999 };
-function getLocalQuota(){
-  const today=new Date().toISOString().slice(0,10);
-  let q=store('alltools_local_quota', {date:today, enhance:0, convert:0});
-  if(q.date!==today) q={date:today, enhance:0, convert:0};
-  return q;
-}
-function tryUseLocalQuota(type){
-  const u=store('alltools_user', null);
-  if(u && (u.plan==='owner' || u.plan==='pro' || u.plan==='basic')) return true;
-  const q=getLocalQuota();
-  if(q[type] >= LOCAL_LIMITS[type]) return false;
-  q[type]++;
-  setStore('alltools_local_quota', q);
-  return true;
-}
-
-/* ---------- history ---------- */
-function addLocalHistory(type, label){
-  const h=store('alltools_local_history', []);
-  h.unshift({type, label, date:new Date().toISOString()});
-  setStore('alltools_local_history', h.slice(0,50));
-  const token=getToken();
-  if(token) api('/api/history', {method:'POST', body:JSON.stringify({type, label})}).catch(()=>{});
-}
-const HIST_ICON={download:'&#8681;', ai:'&#9998;', enhance:'&#10022;', convert:'&#8646;'};
-async function renderHistory(){
-  const list=document.getElementById('hasil-list');
-  const empty=document.getElementById('hasil-empty');
-  let items=store('alltools_local_history', []);
-  const token=getToken();
-  if(token){
-    try{
-      const data=await api('/api/history');
-      items=items.concat(data.history||[]);
-    }catch(e){}
-  }
-  items.sort((a,b)=> new Date(b.date)-new Date(a.date));
-  // Riwayat lokal dan riwayat server bisa memuat item yang sama; gabungkan yang kembar (jenis+label sama, selisih < 1 menit).
-  items=items.filter((it,i)=> !items.slice(0,i).some(o=>o.type===it.type&&o.label===it.label&&Math.abs(new Date(o.date)-new Date(it.date))<60000));
-  items=items.slice(0,50);
-  if(items.length===0){ list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  list.innerHTML=items.map(item=>`
-    <div class="card" style="margin-top:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
-      <div class="ic" style="width:34px;height:34px;font-size:15px;margin:0;">${HIST_ICON[item.type]||''}</div>
-      <div style="flex:1;min-width:0;">
-        <b style="font-size:13px;display:block;">${item.label}</b>
-        <span style="font-size:11px;color:var(--ink-soft);">${new Date(item.date).toLocaleString('id-ID')}</span>
-      </div>
-    </div>`).join('');
-}
-
-/* ---------- premium ---------- */
-const MIDTRANS_CLIENT_KEY='Mid-client-xZ2p9FR4L0DfvRX_';
-const MIDTRANS_SNAP_SRC='https://app.midtrans.com/snap/snap.js'; // Production. Kalau balik ke Sandbox: https://app.sandbox.midtrans.com/snap/snap.js + Client Key Sandbox
-function loadMidtransSnap(){
-  return new Promise((resolve, reject)=>{
-    if(window.snap){ resolve(); return; }
-    const script=document.createElement('script');
-    script.src=MIDTRANS_SNAP_SRC;
-    script.setAttribute('data-client-key', MIDTRANS_CLIENT_KEY);
-    script.onload=()=>resolve();
-    script.onerror=()=>reject(new Error('Gagal memuat sistem pembayaran Midtrans.'));
-    document.head.appendChild(script);
-  });
-}
-async function activatePremium(plan){
-  if(!getToken()){ showPage('akun'); return; }
-  try{
-    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'premium', plan:String(plan).toLowerCase()})});
-    showManualPay(data, async ()=>{ try{ await refreshMe(); renderPremiumPage(); renderAkunPage(); }catch(e){} }, 'premium');
-  }catch(e){
-    alert('Gagal memulai pembayaran: '+e.message);
-  }
-}
-async function loadPremiumPrices(){
-  try{
-    const d=await api('/api/premium/plans');
-    for(const k of ['basic','pro']){
-      const el=document.getElementById('price-'+k);
-      if(el&&d.prices&&d.prices[k]) el.textContent='Rp '+Number(d.prices[k]).toLocaleString('id-ID');
-    }
-  }catch(e){}
-}
-function renderPremiumPage(){
-  loadPremiumPrices();
-  const u=store('alltools_user', null);
-  const active = u && ['basic','pro','owner'].includes(u.plan);
-  document.getElementById('premium-status-card').style.display=active?'block':'none';
-  document.getElementById('premium-plans').style.display=active?'none':'block';
-  if(active){
-    document.getElementById('premium-active-label').textContent='Paket '+u.plan+' aktif.';
-  }
-}
-
-/* ---------- akun ---------- */
-async function doRegister(){
-  const name=document.getElementById('akun-name').value.trim();
-  const email=document.getElementById('akun-email').value.trim();
-  const password=document.getElementById('akun-password').value;
-  const err=document.getElementById('akun-err');
-  if(!name||!email||password.length<6){ err.textContent='Isi nama, email, dan password minimal 6 karakter.'; err.style.display='block'; return; }
-  err.style.display='none';
-  try{
-    const data=await api('/api/auth/register', {method:'POST', body:JSON.stringify({name, email, password})});
-    setStore('alltools_token', data.token);
-    setStore('alltools_user', data.user);
-    renderAkunPage();
-  }catch(e){
-    err.textContent = e.message==='no-backend' ? 'Isi dulu alamat server backend di bawah.' : e.message;
-    err.style.display='block';
-  }
-}
-async function doLogin(){
-  const email=document.getElementById('akun-email').value.trim();
-  const password=document.getElementById('akun-password').value;
-  const err=document.getElementById('akun-err');
-  if(!email||!password){ err.textContent='Isi email dan password dulu ya.'; err.style.display='block'; return; }
-  err.style.display='none';
-  try{
-    const data=await api('/api/auth/login', {method:'POST', body:JSON.stringify({email, password})});
-    setStore('alltools_token', data.token);
-    setStore('alltools_user', data.user);
-    renderAkunPage();
-  }catch(e){
-    err.textContent = e.message==='no-backend' ? 'Isi dulu alamat server backend di bawah.' : e.message;
-    err.style.display='block';
-  }
-}
-function doLogout(){
-  setStore('alltools_token', null);
-  setStore('alltools_user', null);
-  renderAkunPage();
-}
-async function refreshMe(){
-  if(!getToken()) return;
-  try{
-    const before=store('alltools_user', null);
-    const data=await api('/api/me');
-    setStore('alltools_user', data.user);
-    const rb=PLAN_RANK[before&&before.plan]||0, ra=PLAN_RANK[data.user.plan]||0;
-    if(before&&ra>rb) celebratePremium(data.user.plan);
-  }catch(e){}
-}
-const PLAN_QUOTA_LABEL={downloader:'downloads', ai:'ai', enhance:'enhance', convert:'convert'};
-async function renderPlanBadge(page){
-  const el=document.getElementById('plan-badge-'+page);
-  if(!el) return;
-  if(!getToken()){ el.innerHTML=''; return; }
-  await refreshMe();
-  const u=store('alltools_user', null);
-  if(!u){ el.innerHTML=''; return; }
-  const isPremiumPlan = ['owner','pro','basic'].includes(u.plan);
-  const planLabel = u.plan==='owner' ? 'Owner' : u.plan==='pro' ? 'Premium Pro' : u.plan==='basic' ? 'Premium Basic' : 'Gratis';
-  const quotaKey=PLAN_QUOTA_LABEL[page];
-  let rightText;
-  if(isPremiumPlan){
-    rightText='✨ Unlimited';
-  } else {
-    const used=u.quota[quotaKey]||0;
-    const limit=u.limits[quotaKey];
-    rightText=(limit===9999 ? 'Unlimited' : used+'/'+limit+' hari ini');
-  }
-  el.innerHTML=`<div class="plan-badge ${isPremiumPlan?'premium':'free'}">
-    <span>${isPremiumPlan?'👑':''} ${planLabel}</span>
-    <span>${rightText}</span>
-  </div>`;
-}
-function renderAkunPage(){
-  const u=store('alltools_user', null);
-  const token=getToken();
-  document.getElementById('akun-logged-out').classList.toggle('hidden', !!(u&&token));
-  document.getElementById('akun-logged-in').classList.toggle('hidden', !(u&&token));
-  document.getElementById('backend-url-input').value=getBackendUrl();
-  if(u&&token){
-    document.getElementById('akun-display-name').textContent=u.name;
-    document.getElementById('akun-display-email').textContent=u.email;
-    document.getElementById('akun-avatar').textContent=(u.name||'?').charAt(0).toUpperCase();
-    const label = u.plan==='owner' ? 'Status: Owner — semua fitur & kuota unlimited'
-      : u.plan==='pro' ? 'Status: Premium Pro'
-      : u.plan==='basic' ? 'Status: Premium Basic'
-      : 'Status: Gratis — kuota AI '+u.quota.ai+'/'+u.limits.ai+' hari ini, download '+u.quota.downloads+'/'+u.limits.downloads;
-    document.getElementById('akun-plan-label').textContent=label;
-    refreshMe().then(renderAkunPage_light);
-  }
-}
-function renderAkunPage_light(){
-  const u=store('alltools_user', null);
-  if(!u) return;
-  const label = u.plan==='owner' ? 'Status: Owner — semua fitur & kuota unlimited'
-    : u.plan==='pro' ? 'Status: Premium Pro'
-    : u.plan==='basic' ? 'Status: Premium Basic'
-    : 'Status: Gratis — kuota AI '+u.quota.ai+'/'+u.limits.ai+' hari ini, download '+u.quota.downloads+'/'+u.limits.downloads;
-  const el=document.getElementById('akun-plan-label');
-  if(el) el.textContent=label;
-}
-
-function quickDownload(){
-  const v=document.getElementById('quick-link').value.trim();
-  showPage('downloader');
-  if(v) document.getElementById('dl-link').value=v;
-}
-
-async function runDownload(){
-  const link=document.getElementById('dl-link').value.trim();
-  const err=document.getElementById('dl-err');
-  const btn=document.getElementById('dl-btn');
-  const resBox=document.getElementById('dl-result');
-  const status=document.getElementById('dl-status');
-  if(!link){ err.textContent='Tempel link video dulu ya.'; err.style.display='block'; return; }
-  err.style.display='none';
-  if(!getToken()){ showPage('akun'); return; }
-  btn.disabled=true;
-  btn.innerHTML='<span class="spin"></span> Memproses...';
-  resBox.style.display='block';
-  status.textContent='Menghubungi server...';
-  try{
-    const data = await api('/api/download', {method:'POST', body:JSON.stringify({url: link})});
-    status.innerHTML = 'Video "'+data.title+'" siap: <a href="'+getBackendUrl()+data.streamUrl+'" download="video.mp4">unduh di sini</a>';
-  }catch(e){
-    status.textContent = e.message==='no-backend'
-      ? 'Isi dulu alamat server di halaman Akun.'
-      : e.message;
-  }
-  btn.disabled=false;
-  btn.textContent='Ambil video';
-}
-
-async function sendChat(){
-  const input=document.getElementById('chat-input');
-  const box=document.getElementById('chat-box');
-  const text=input.value.trim();
-  if(!text) return;
-  if(!getToken()){
-    const m=document.createElement('div');
-    m.className='msg ai';
-    m.textContent='Masuk dulu di halaman Akun sebelum chat AI.';
-    box.appendChild(m); box.scrollTop=box.scrollHeight;
-    return;
-  }
-  const u=document.createElement('div');
-  u.className='msg user';
-  u.textContent=text;
-  box.appendChild(u);
-  input.value='';
-  box.scrollTop=box.scrollHeight;
-  const thinking=document.createElement('div');
-  thinking.className='msg ai';
-  thinking.innerHTML='<span class="spin"></span>';
-  box.appendChild(thinking);
-  box.scrollTop=box.scrollHeight;
-  try{
-    const data=await api('/api/ai/chat', {method:'POST', body:JSON.stringify({message: text})});
-    thinking.textContent=data.reply;
-  }catch(e){
-    thinking.textContent = e.message==='no-backend'
-      ? 'Isi dulu alamat server di halaman Akun.'
-      : e.message;
-  }
-  box.scrollTop=box.scrollHeight;
-}
-
-function runEnhance(){
-  const fileInput=document.getElementById('enhance-file');
-  const err=document.getElementById('enhance-err');
-  const wrap=document.getElementById('enhance-wrap');
-  const out=document.getElementById('enhance-out');
-  const file=fileInput.files[0];
-  if(!file){ err.style.display='block'; return; }
-  err.style.display='none';
-  if(!tryUseLocalQuota('enhance')){
-    err.textContent='Kuota enhancer harian habis. Upgrade ke Premium untuk unlimited.';
-    err.style.display='block';
-    return;
-  }
-  err.textContent='Pilih foto dulu ya.';
-  const img=new Image();
-  img.onload=()=>{
-    const canvas=document.createElement('canvas');
-    canvas.width=img.width; canvas.height=img.height;
-    const ctx=canvas.getContext('2d');
-    ctx.filter='contrast(1.12) saturate(1.08) brightness(1.02)';
-    ctx.drawImage(img,0,0);
-    // simple sharpen convolution
-    const w=canvas.width, h=canvas.height;
-    if(w*h < 4000000){
-      const imgData=ctx.getImageData(0,0,w,h);
-      const src=imgData.data;
-      const out2=new Uint8ClampedArray(src);
-      const kernel=[0,-1,0,-1,5,-1,0,-1,0];
-      for(let y=1;y<h-1;y++){
-        for(let x=1;x<w-1;x++){
-          for(let c=0;c<3;c++){
-            let sum=0, k=0;
-            for(let ky=-1;ky<=1;ky++){
-              for(let kx=-1;kx<=1;kx++){
-                const idx=((y+ky)*w+(x+kx))*4+c;
-                sum+=src[idx]*kernel[k]; k++;
-              }
-            }
-            out2[(y*w+x)*4+c]=sum;
-          }
-        }
-      }
-      imgData.data.set(out2);
-      ctx.putImageData(imgData,0,0);
-    }
-    out.src=canvas.toDataURL('image/jpeg',0.92);
-    wrap.style.display='block';
-    addLocalHistory('enhance', file.name||'foto');
-  };
-  img.src=URL.createObjectURL(file);
-}
-
-let currentDataUrl=null, currentExt='jpg';
-let downloadsCap=null;
-if(window.claude && window.claude.use){
-  window.claude.use('downloads').then(d=>{ downloadsCap=d; }).catch(()=>{});
-}
-
-async function doDownload(){
-  if(!currentDataUrl) return;
-  if(downloadsCap){
-    try{
-      await downloadsCap.save({filename:'hasil.'+currentExt, data:currentDataUrl});
-      return;
-    }catch(e){ /* fall through */ }
-  }
-  const a=document.createElement('a');
-  a.href=currentDataUrl; a.download='hasil.'+currentExt;
-  document.body.appendChild(a); a.click(); a.remove();
-}
-document.getElementById('conv-dl').addEventListener('click', doDownload);
-
-function runConvert(){
-  const fileInput=document.getElementById('conv-file');
-  const err=document.getElementById('conv-err');
-  const file=fileInput.files[0];
-  if(!file){ err.style.display='block'; return; }
-  err.style.display='none';
-  const format=document.getElementById('conv-format').value;
-  const quality=parseInt(document.getElementById('conv-q').value)/100;
-  const img=new Image();
-  img.onload=()=>{
-    const canvas=document.createElement('canvas');
-    canvas.width=img.width; canvas.height=img.height;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(img,0,0);
-    const dataUrl=canvas.toDataURL(format, quality);
-    document.getElementById('conv-out').src=dataUrl;
-    document.getElementById('conv-result').style.display='block';
-    const approxBytes=Math.round((dataUrl.length-22)*3/4);
-    document.getElementById('conv-size').textContent = (approxBytes/1024).toFixed(0)+' KB';
-    currentDataUrl=dataUrl;
-    currentExt=format.split('/')[1];
-    addLocalHistory('convert', (file.name||'foto')+' → '+currentExt);
-  };
-  img.src=URL.createObjectURL(file);
-}
-/* ---------- publish ke web ---------- */
-async function runPublish(){
-  const fileInput=document.getElementById('publish-file');
-  const slugInput=document.getElementById('publish-slug');
-  const err=document.getElementById('publish-err');
-  const btn=document.getElementById('publish-btn');
-  const resBox=document.getElementById('publish-result');
-  const status=document.getElementById('publish-status');
-  const file=fileInput.files[0];
-  const slug=slugInput.value.trim();
-  if(!file||!slug){ err.textContent='Pilih file HTML dan isi nama alamat dulu.'; err.style.display='block'; return; }
-  if(!getToken()){ showPage('akun'); return; }
-  err.style.display='none';
-  btn.disabled=true;
-  btn.innerHTML='<span class="spin"></span> Mempublikasikan...';
-  resBox.style.display='block';
-  status.textContent='Mengupload...';
-  try{
-    const form=new FormData();
-    form.append('file', file);
-    form.append('slug', slug);
-    form.append('title', slug);
-    const base=getBackendUrl();
-    if(!base) throw new Error('no-backend');
-    const r=await fetch(base+'/api/publish', {
-      method:'POST',
-      headers:{ 'Authorization':'Bearer '+getToken() },
-      body: form,
-    });
-    const data=await r.json();
-    if(!r.ok) throw new Error(data.error||'Gagal publish.');
-    status.innerHTML='Berhasil! Link kamu: <a href="'+base+data.url+'" target="_blank">'+base+data.url+'</a>';
-    renderPublishList();
-  }catch(e){
-    status.textContent = e.message==='no-backend' ? 'Isi dulu alamat server di halaman Akun.' : e.message;
-  }
-  btn.disabled=false;
-  btn.textContent='Publish';
-}
-async function renderPublishList(){
-  const list=document.getElementById('publish-list');
-  if(!getToken()){ list.innerHTML='<div class="note">Masuk dulu di halaman Akun.</div>'; return; }
-  try{
-    const data=await api('/api/my-sites');
-    const sites=data.sites||[];
-    if(sites.length===0){ list.innerHTML='<div class="note">Belum ada website yang dipublish.</div>'; return; }
-    const base=getBackendUrl();
-    list.innerHTML=sites.map(s=>`
-      <div class="card" style="margin-top:10px;padding:12px 16px;">
-        <b style="font-size:13px;display:block;">${s.title}</b>
-        <a href="${base}${'/site/'+s.slug+'/'}" target="_blank" style="font-size:12px;color:var(--accent);">${base}/site/${s.slug}/</a>
-      </div>`).join('');
-  }catch(e){
-    list.innerHTML='<div class="note">'+(e.message==='no-backend'?'Isi dulu alamat server di halaman Akun.':e.message)+'</div>';
-  }
-}
-function renderPublishPage(){
-  const u=store('alltools_user', null);
-  const box=document.getElementById('publish-result');
-  box.style.display='none';
-  if(!u || !['owner','pro','basic'].includes(u.plan)){
-    document.getElementById('publish-err').textContent='Fitur ini khusus Premium/Owner. Upgrade dulu di halaman Premium.';
-    document.getElementById('publish-err').style.display='block';
-  } else {
-    document.getElementById('publish-err').style.display='none';
-  }
-  renderPublishList();
-}
-
-/* ---------- sewa bot whatsapp ---------- */
-const BOT_FEATURE_LABELS={
-  autoreply:'Auto-reply pesan masuk', welcome:'Welcome message member baru grup',
-  catalog:'Kirim katalog produk otomatis', broadcast:'Broadcast pesan ke banyak kontak',
-  antilink:'Anti-link di grup', reminder:'Reminder/absen otomatis',
-  orderbot:'Deteksi & catat pesanan otomatis', faq:'Auto-jawab FAQ dari daftar tanya-jawab',
-  ai:'Chat AI langsung di WhatsApp', downloader:'Download video TikTok/IG tanpa watermark',
-  sticker:'Stiker (.s dan .brat)', pushkontak:'Push Kontak (pesan pribadi ke member grup)',
-};
-function renderBotFeatureCheckboxes(){
-  const box=document.getElementById('bot-features-list');
-  box.innerHTML=Object.entries(BOT_FEATURE_LABELS).map(([key,label])=>`
-    <label class="bf-row" data-key="${key}" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);">
-      <input type="checkbox" value="${key}" class="bot-feature-checkbox" style="width:auto;">
-      ${label}
-    </label>`).join('');
-  botApplyMode();
-}
-async function runRentBot(){
-  const name=document.getElementById('bot-name').value.trim();
-  const duration=document.getElementById('bot-duration').value;
-  const checked=[...document.querySelectorAll('.bot-feature-checkbox:checked')].map(c=>c.value);
-  const err=document.getElementById('bot-err');
-  const btn=document.getElementById('bot-rent-btn');
-  if(!name||checked.length===0){ err.textContent='Isi nama bot dan pilih minimal 1 fitur.'; err.style.display='block'; return; }
-  if(!getToken()){ showPage('akun'); return; }
-  err.style.display='none';
-  btn.disabled=true;
-  btn.innerHTML='<span class="spin"></span> Memproses...';
-  try{
-    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'bot', name, features:checked, durationDays:Number(duration), senderMode:botMode})});
-    document.getElementById('bot-name').value='';
-    document.querySelectorAll('.bot-feature-checkbox').forEach(c=>c.checked=false);
-    showManualPay(data, renderBotList, 'bot');
-  }catch(e){
-    err.textContent = e.message==='no-backend' ? 'Isi dulu alamat server di halaman Akun.' : e.message;
-    err.style.display='block';
-  }
-  btn.disabled=false;
-  btn.textContent='Sewa Bot';
-}
-async function renderBotList(){
-  const list=document.getElementById('bot-list');
-  if(!getToken()){ list.innerHTML='<div class="note">Masuk dulu di halaman Akun.</div>'; return; }
-  try{
-    const data=await api('/api/bots/mine');
-    const botNum=String(await getPlatformBotNumber()).replace(/[^0-9]/g,'');
-    const bots=data.bots||[];
-    const eh=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const pend=(data.pending||[]).map(o=>`
-      <div class="card" style="margin-top:10px;padding:14px 16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <b style="font-size:13px;">${eh(o.name)}</b>
-          <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:var(--ink-soft);color:#fff;">${o.status==='waiting_confirmation'?'Menunggu konfirmasi':'Belum dibayar'}</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Sewa ${o.durationDays} hari · Rp ${Number(o.price).toLocaleString('id-ID')}</div>
-        <div class="note" style="margin-top:8px;">PIN akan muncul di sini setelah pembayaran dikonfirmasi admin.</div>
-      </div>`).join('');
-    if(bots.length===0&&!pend){ list.innerHTML='<div class="note">Belum ada bot yang disewa.</div>'; return; }
-    list.innerHTML=pend+bots.map(b=>`
-      <div class="card" style="margin-top:10px;padding:14px 16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <b style="font-size:13px;">${eh(b.name)}</b>
-          <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:${b.status==='active'?'var(--accent)':'var(--danger)'};color:#fff;">${b.status==='active'?'Aktif':'Kedaluwarsa'}</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Fitur: ${b.features.map(f=>BOT_FEATURE_LABELS[f]||f).join(', ')}</div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">Berlaku sampai: ${new Date(b.expiresAt).toLocaleDateString('id-ID')}</div>
-        ${b.status==='active'?`<button class="btn" style="margin-top:10px" onclick="botOpenSender('${eh(b.id)}')">⚙️ Kelola Sender</button>`
-          :'<div class="note" style="margin-top:8px;">Masa sewa sudah habis. Sewa lagi untuk mengaktifkan kembali.</div>'}
-      </div>`).join('');
-  }catch(e){
-    list.innerHTML='<div class="note">'+(e.message==='no-backend'?'Isi dulu alamat server di halaman Akun.':e.message)+'</div>';
-  }
-}
-
-/* ---------- Sender per bot + pengaturan ---------- */
-const botState={}; let botPoll=null;
-const botEh=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let botCurSender=null;
-function botOpenSender(id){
-  botCurSender=id;
-  const el=document.getElementById('sender-box');
-  el.innerHTML='<div id="bs-'+botEh(id)+'"><div class="note"><span class="spin"></span> Memuat status sender...</div></div>';
-  showPage('sender');
-  botSenderLoad(id);
-}
-function botSenderReload(){ if(botCurSender) botSenderLoad(botCurSender); }
-function botSenderMenu(){ const m=document.getElementById('sender-menu'); if(m) m.classList.toggle('hidden'); }
-function botSetSub(s){
-  const el=document.getElementById('sender-sub'); if(!el) return;
-  el.textContent=(s&&s.mode==='global')?'Global · PIN bot':'Personal · pair & QR';
-}
-async function botSenderLoad(id){
-  const box=document.getElementById('bs-'+id); if(!box) return;
-  try{ const s=await api('/api/bots/'+id+'/sender'); botState[id]=s; botSenderPaint(id,s); }
-  catch(e){ box.innerHTML='<div class="note">'+botEh(e.message)+'</div>'; }
-}
-let botServers=null, botMain=null; const botPick={}, botPoolPref={};
-async function botLoadServers(){ try{ const d=await api('/api/bots/servers'); botServers=d.servers||[]; botMain=d.main||null; }catch(e){ botServers=[]; botMain=null; } }
-function botServerChips(id){
-  const pick=botPick[id]||'auto';
-  const SRV='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>';
-  const BOLT='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>';
-  const chip=(key,icon,top,sub,col,dis,tip)=>{
-    const on=pick===key;
-    return '<button type="button" '+(dis?'disabled ':'')+(tip?'title="'+botEh(tip)+'" ':'')+'onclick="botPickServer(\''+id+'\',\''+key+'\')" style="flex:none;width:98px;padding:12px 6px;border-radius:16px;text-align:center;cursor:'+(dis?'not-allowed':'pointer')+';opacity:'+(dis?.55:1)+';color:'+(on?'var(--amber)':'var(--ink-soft)')+';background:'+(on?'color-mix(in srgb,var(--amber) 22%,transparent)':'transparent')+';border:1.5px solid '+(on?'var(--amber)':'var(--line)')+'">'+
-      '<div style="height:22px;display:flex;align-items:center;justify-content:center">'+icon+'</div>'+
-      '<div style="font-size:13px;font-weight:800;letter-spacing:.04em;margin-top:6px;color:'+(on?'var(--amber)':'var(--ink)')+'">'+top+'</div>'+
-      '<div style="font-size:11px;font-weight:800;color:'+col+';margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+sub+'</div></button>';
-  };
-  let h=chip('auto',BOLT,'AUTO','TAP → SERVER TERBAIK','var(--amber)',false,'Pilih server otomatis (paling lowong)');
-  if(botMain){ const ms=botMain.status==='active'?['ACTIVE','#22A06B',false]:['PENUH','#E0483E',true]; h+=chip('main',SRV,'SERVER UTAMA',ms[0],ms[1],ms[2],'Terisi '+botMain.used+'/'+botMain.max+' · mendukung Pool Sender Global'); }
-  (botServers||[]).forEach(s=>{
-    const st=s.status==='active'?['ACTIVE','#22A06B',false]:s.status==='full'?['PENUH','#E0483E',true]:['OFFLINE','#E0483E',true];
-    h+=chip(String(s.id),SRV,'SERVER '+s.id,st[0],st[1],st[2],s.status==='offline'?'Server offline':'Terisi '+s.used+'/'+s.max);
-  });
-  return h;
-}
-function botPickServer(id,key){ botPick[id]=key; const el=document.getElementById('bsv-'+id); if(el) el.innerHTML=botServerChips(id); botPoolSync(id); }
-function botPoolSync(id){
-  const c=document.getElementById('bpool-'+id), t=document.getElementById('bplt-'+id); if(!c) return;
-  const pk=botPick[id]||'auto', worker=pk!=='auto'&&pk!=='main';
-  c.disabled=worker; c.checked=worker?false:(botPoolPref[id]!==false);
-  if(t) t.textContent=worker?'Tidak tersedia di Server '+pk+'. Pilih AUTO atau SERVER UTAMA kalau mau ikut pool.':'Nomor ini boleh dipakai bot Global untuk Push Kontak (mengirim pesan atas nama bot lain). Ada risiko nomor dibatasi WhatsApp kalau terlalu banyak dipakai. Bisa dimatikan kapan saja dengan perintah .pool off. Sender dipasang di Server Utama.';
-}
-function botServerBlock(id){
-  botLoadServers().then(()=>{
-    const w=document.getElementById('bsw-'+id), el=document.getElementById('bsv-'+id); if(!w||!el) return;
-    if(!botServers||!botServers.length){ w.style.display='none'; return; }
-    const pk=botPick[id]; if(pk&&pk!=='auto'&&pk!=='main'){ const s=botServers.find(x=>String(x.id)===pk); if(!s||s.status!=='active') botPick[id]='auto'; } botPoolSync(id);
-    w.style.display='block'; el.innerHTML=botServerChips(id);
-  });
-  return '<div id="bsw-'+id+'" style="display:none"><div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;display:flex;justify-content:space-between"><span>SERVER DEPLOY</span><span style="font-weight:700;letter-spacing:.02em;font-size:13px">👆 Geser</span></div>'+
-    '<div id="bsv-'+id+'" style="display:flex;gap:8px;overflow-x:auto;padding:6px 0 10px"></div></div>';
-}
-function botSenderPaint(id,s){
-  const box=document.getElementById('bs-'+id); if(!box) return;
-  if(!(s.status==='pairing'&&s.qr)) box.dataset.qr='';
-  botSetSub(s);
-  if(s.status==='server_offline'){
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;border:1px solid #E0483E"><div style="font-size:15px;font-weight:800;color:#E0483E">SERVER '+botEh(s.server)+' OFFLINE</div>'+
-      (s.phone?'<div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Sender +'+botEh(s.phone)+'</div>':'')+
-      '<div style="font-size:12px;color:var(--ink-soft);margin-top:6px">'+botEh(s.error||'')+'</div></div>'+
-      '<button class="btn secondary" style="margin-top:8px" onclick="botSenderLoad(\''+id+'\')">Muat ulang</button>';
-    return;
-  }
-  if(s.mode==='global'){
-    const g=s.schedule||{}, on=!!g.online, wins=(g.windows||[]).map(w=>w.join(' - ')).join(', ');
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender Global · PIN bot</div>'+
-      '<div style="font-size:30px;font-weight:800;letter-spacing:5px;color:var(--amber);font-family:monospace;">'+botEh(s.pin||'-')+'</div>'+
-      '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Nomor pusat: '+(s.phone?'+'+botEh(s.phone):'belum terhubung')+' · '+(s.status==='connected'?'online ✅':'offline')+'</div>'+
-      '<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">Grup terpasang: '+(s.chats||0)+'/'+(s.maxChats||0)+' · Jam aktif '+botEh(wins)+' WIB · '+(on?'aktif ✅':'istirahat 💤')+'</div></div>'+
-      '<button class="btn" style="margin-top:8px" onclick="botOpenCfg(\''+id+'\')">⚙️ Atur Bot</button>'+
-      '<div class="note" style="margin-top:6px">'+(s.registered?'Nomormu sudah terdaftar sebagai owner. ':'')+'1) Chat pribadi ke nomor pusat: <b>.daftar '+botEh(s.pin||'PIN')+'</b> 2) Masukkan nomor pusat ke grup 3) Di grup ketik <b>.pasang</b>. Lepas dari grup: <b>.lepas</b>.</div>';
-    return;
-  }
-  const phoneRow='<input type="text" inputmode="numeric" id="bp-'+id+'" placeholder="Nomor WA sender, contoh 6281234567890">';
-  if(s.status==='connected'){
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender terhubung'+(s.server>=1?' · Server '+botEh(s.server):'')+'</div><div style="font-size:18px;font-weight:700;color:var(--accent);">+'+botEh(s.phone)+'</div>'+
-      '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Pesanan: '+s.stats.orders+' · Kontak: '+s.stats.contacts+' · Pengingat: '+s.stats.reminders+'</div></div>'+
-      '<button class="btn" style="margin-top:8px" onclick="botOpenCfg(\''+id+'\')">⚙️ Atur Bot</button>'+
-      '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Lepas Sender</button>'+
-      '<div class="note" style="margin-top:6px">Di WhatsApp, ketik <b>'+botEh(s.config.prefix)+'menu</b> ke nomor sender untuk melihat perintah.</div>';
-  }else if(s.status==='pairing'&&s.qr){
-    if(box.dataset.qr===s.qr) return; // QR sama, jangan digambar ulang (hindari berkedip)
-    box.dataset.qr=s.qr;
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">Scan QR dengan WhatsApp sender</div><div id="qr-'+id+'" style="display:inline-block;background:#fff;padding:8px;border-radius:10px;min-width:180px;min-height:180px;line-height:0"></div></div>'+
-      '<div class="note" style="margin-top:8px">Buka WhatsApp di HP sender → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → arahkan kamera ke QR di atas. QR diperbarui otomatis, jangan ditutup sebelum selesai.</div>'+
-      '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Batal</button>';
-    botDrawQR(id,s.qr);
-    botStartPoll();
-  }else if(s.status==='pairing'&&s.code){
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Kode pairing</div><div style="font-size:30px;font-weight:800;letter-spacing:5px;color:var(--accent);font-family:monospace;">'+botEh(s.code.replace(/(.{4})(?=.)/,'$1-'))+'</div></div>'+
-      '<div class="note" style="margin-top:8px">Buka WhatsApp di HP sender → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → <b>Tautkan dengan nomor telepon</b> → masukkan kode di atas. Kode berlaku beberapa menit.</div>'+
-      '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Batal</button>';
-    botStartPoll();
-  }else if(s.status==='connecting'){
-    box.innerHTML='<div class="note"><span class="spin"></span> Menghubungkan sender...</div>'; botStartPoll();
-  }else{
-    const m=botMethod[id]||'code';
-    box.innerHTML='<div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#E0483E;background:color-mix(in srgb,#E0483E 14%,transparent);padding:5px 10px;border-radius:8px;margin-bottom:10px">NO SENDER</div>'+
-      botServerBlock(id)+
-      '<div id="bpw-'+id+'" style="display:'+(m==='qr'?'none':'block')+'">'+phoneRow+'</div>'+
-      '<div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;margin-top:12px">METODE TAUTAN</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px">'+
-        '<button type="button" id="bm-code-'+id+'" onclick="botSetMethod(\''+id+'\',\'code\')" style="padding:12px 6px;border-radius:12px;font-weight:800;font-size:12px;letter-spacing:.05em;cursor:pointer">🔢 PAIRING CODE</button>'+
-        '<button type="button" id="bm-qr-'+id+'" onclick="botSetMethod(\''+id+'\',\'qr\')" style="padding:12px 6px;border-radius:12px;font-weight:800;font-size:12px;letter-spacing:.05em;cursor:pointer">▦ QR CODE</button>'+
-      '</div>'+
-      '<label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;margin:10px 0 2px"><input type="checkbox" id="bpool-'+id+'" checked onchange="botPoolPref[\''+id+'\']=this.checked" style="margin-top:3px;width:auto"><span><b>🔄 Ikut Pool Sender Global</b><br><span id="bplt-'+id+'" style="color:var(--ink-soft)"></span></span></label>'+
-      '<div class="err" id="be-'+id+'">'+botEh(s.error||'')+'</div>'+
-      '<button class="btn" style="margin-top:6px" id="bgo-'+id+'" onclick="botPair(\''+id+'\')">🔗 START PAIRING</button>'+
-      '<div class="note" style="margin-top:6px" id="bmn-'+id+'"></div>';
-    botSetMethod(id,m); botPoolSync(id);
-  }
-}
-function botStartPoll(){
-  if(botPoll) return;
-  botPoll=setInterval(()=>{
-    const ids=Object.keys(botState).filter(i=>document.getElementById('bs-'+i));
-    if(!ids.length||document.hidden){ if(!ids.length){clearInterval(botPoll);botPoll=null;} return; }
-    ids.forEach(async i=>{ const st=botState[i]&&botState[i].status; if(st==='pairing'||st==='connecting') await botSenderLoad(i); });
-    if(!Object.values(botState).some(s=>s.status==='pairing'||s.status==='connecting')){ clearInterval(botPoll); botPoll=null; }
-  },3000);
-}
-const botMethod={};
-function botSetMethod(id,m){
-  botMethod[id]=m;
-  const on='border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)';
-  const off='border:1.5px solid var(--line);color:var(--ink-soft);background:transparent';
-  const c=document.getElementById('bm-code-'+id), q=document.getElementById('bm-qr-'+id);
-  if(c) c.style.cssText+=';'+(m==='code'?on:off);
-  if(q) q.style.cssText+=';'+(m==='qr'?on:off);
-  const w=document.getElementById('bpw-'+id); if(w) w.style.display=m==='qr'?'none':'block';
-  const n=document.getElementById('bmn-'+id);
-  if(n) n.textContent=m==='qr'?'Tidak perlu isi nomor. Setelah START PAIRING, scan QR dari WhatsApp di HP sender.':'Masukkan nomor WhatsApp yang mau dijadikan bot (format 62..., tanpa 0). Kamu akan dapat kode pairing untuk ditautkan di WhatsApp.';
-}
-let botQRLib=null;
-function botLoadQRLib(){
-  if(window.qrcode) return Promise.resolve();
-  if(botQRLib) return botQRLib;
-  botQRLib=new Promise((res,rej)=>{
-    const sc=document.createElement('script');
-    sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-    sc.onload=()=>res(); sc.onerror=()=>{ botQRLib=null; rej(new Error('lib')); };
-    document.head.appendChild(sc);
-  });
-  return botQRLib;
-}
-async function botDrawQR(id,text){
-  const el=document.getElementById('qr-'+id); if(!el) return;
-  try{
-    await botLoadQRLib();
-    const q=window.qrcode(0,'M'); q.addData(text); q.make();
-    el.innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});
-    const svg=el.querySelector('svg'); if(svg){ svg.style.width='200px'; svg.style.height='200px'; svg.style.display='block'; }
-  }catch(e){
-    el.style.lineHeight='1.4'; el.style.color='#111'; el.style.fontSize='12px'; el.style.padding='16px';
-    el.textContent='QR gagal ditampilkan (library tidak termuat). Cek koneksi lalu coba lagi.';
-  }
-}
-function botToggleInfo(forceOpen){
-  const p=document.getElementById('infobot-panel'), a=document.getElementById('infobot-arrow'); if(!p) return;
-  const open=forceOpen===true?(p.classList.remove('hidden'),true):p.classList.toggle('hidden')===false;
-  if(open) p.scrollIntoView({behavior:'smooth',block:'nearest'});
-  if(a) a.textContent=open?'⌄':'›';
-}
-async function botPair(id){
-  const er=document.getElementById('be-'+id), m=botMethod[id]||'code';
-  const inp=document.getElementById('bp-'+id);
-  const phone=m==='code'?((inp&&inp.value)||'').replace(/\D/g,''):'';
-  er.style.display='none';
-  if(m==='code'&&phone.length<9){ er.textContent='Isi nomor WhatsApp dengan benar.'; er.style.display='block'; return; }
-  er.textContent=m==='qr'?'Menyiapkan QR...':'Meminta kode...'; er.style.display='block';
-  const pk=botPick[id]||'auto', pc=document.getElementById('bpool-'+id), pool=!!(pc&&pc.checked&&!pc.disabled&&(pk==='auto'||pk==='main'));
-  try{ const d=await api('/api/bots/'+id+'/sender/pair',{method:'POST',body:JSON.stringify({method:m,phone,server:pool?'main':pk,pool})}); botState[id]={status:'pairing',code:d.code,qr:d.qr,config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
-  catch(e){ er.textContent=e.message; er.style.display='block'; }
-}
-async function botStop(id){
-  if(!confirm('Lepas sender dari bot ini? Nomor akan keluar dari perangkat tertaut dan bot berhenti membalas.')) return;
-  try{ await api('/api/bots/'+id+'/sender/stop',{method:'POST'}); delete botState[id]; botState[id]={status:'idle',config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
-  catch(e){ alert(e.message); }
-}
-/* pengaturan: textarea satu baris = satu item */
-const lines=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
-const pair=(l,sep)=>{ const i=l.indexOf(sep); return i<0?null:[l.slice(0,i).trim(),l.slice(i+1).trim()]; };
-function botOpenCfg(id){
-  const s=botState[id]; if(!s) return; const c=s.config, f=s.features||[], has=k=>f.includes(k);
-  const sec=(k,title,hint,body)=>has(k)?'<label class="field-label" style="margin-top:12px"><b>'+title+'</b></label>'+(hint?'<div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 6px">'+hint+'</div>':'')+body:'';
-  const ta=(i,v,ph)=>'<textarea id="'+i+'" rows="4" placeholder="'+botEh(ph)+'">'+botEh(v)+'</textarea>';
-  document.getElementById('bot-cfg').innerHTML='<h3>Atur Bot</h3>'+
-    '<label class="field-label"><b>Nomor owner tambahan</b></label><input type="text" id="bc-owners" placeholder="628xxx, 628yyy (nomor sender otomatis owner)" value="'+botEh((c.owners||[]).join(', '))+'">'+
-    '<label class="field-label" style="margin-top:12px"><b>Awalan perintah</b></label><input type="text" id="bc-prefix" maxlength="1" value="'+botEh(c.prefix)+'">'+
-    sec('autoreply','Auto-reply','Satu baris: kata kunci=balasan',ta('bc-ar',(c.autoreply.rules||[]).map(r=>r.k+'='+r.r).join('\n'),'harga=Harga ada di .katalog'))+
-    sec('autoreply','Balasan sapaan default','Dikirim 1x per 6 jam ke orang baru yang chat',ta('bc-fb',c.autoreply.fallback||'','Halo! Admin akan segera balas.'))+
-    sec('welcome','Welcome grup','Pakai @user dan @group',ta('bc-wl',c.welcome.text||'',''))+
-    sec('catalog','Katalog produk','Satu baris: Nama|Harga|Deskripsi',ta('bc-ct',(c.catalog.items||[]).map(x=>[x.name,x.price,x.desc].join('|')).join('\n'),'Kaos Polos|75000|Katun combed 30s'))+
-    sec('faq','FAQ','Satu baris: pertanyaan=jawaban',ta('bc-fq',(c.faq||[]).map(x=>x.q+'='+x.a).join('\n'),'jam buka=Setiap hari 09.00-17.00'))+
-    sec('orderbot','Deteksi pesanan','Kata pemicu dipisah koma',  '<input type="text" id="bc-ok" value="'+botEh((c.orderbot.keywords||[]).join(', '))+'"><div style="height:6px"></div>'+ta('bc-or',c.orderbot.reply||'','Balasan setelah pesanan dicatat'))+
-    sec('antilink','Anti-link','', '<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="bc-kick" style="width:auto" '+(c.antilink.kick?'checked':'')+'> Keluarkan member setelah 3x kirim link (bot harus admin grup)</label>')+
-    sec('ai','Kepribadian AI','Contoh: Kamu CS Toko Baju Rina, ramah, jawab singkat.',ta('bc-ai',c.aiPrompt||'',''))+
-    (s.mode==='personal'&&!(s.server>=1)?'<label class="field-label" style="margin-top:12px"><b>Pool Sender Global</b></label><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><input type="checkbox" id="bc-pool" style="width:auto;margin-top:3px" '+(c.sharePool?'checked':'')+'> <span>Izinkan nomor sender ini dipakai acak oleh bot Sender Global untuk Push Kontak. Pesan akan keluar dari nomor WhatsApp-mu, dan kalau nomor kena banned, risikonya ke nomormu. Bisa dimatikan kapan saja.</span></label>':'')+
-    '<div class="err" id="bc-err"></div><button class="btn" style="margin-top:12px" onclick="botSaveCfg(\''+id+'\')">Simpan</button>'+
-    '<button class="btn secondary" style="margin-top:6px" onclick="botCloseCfg()">Tutup</button>';
-  document.getElementById('bot-sheet').classList.remove('hidden');
-}
-function botCloseCfg(){ document.getElementById('bot-sheet').classList.add('hidden'); }
-async function botSaveCfg(id){
-  const v=i=>{const e=document.getElementById(i); return e?e.value:undefined;}, has=i=>!!document.getElementById(i);
-  const cfg={ prefix:v('bc-prefix'), owners:String(v('bc-owners')||'').split(/[,\s]+/).filter(Boolean) };
-  if(has('bc-ar')) cfg.autoreply={ rules:lines(v('bc-ar')).map(l=>pair(l,'=')).filter(Boolean).map(p=>({k:p[0],r:p[1]})), fallback:v('bc-fb') };
-  if(has('bc-wl')) cfg.welcome={text:v('bc-wl')};
-  if(has('bc-ct')) cfg.catalog={ items:lines(v('bc-ct')).map(l=>l.split('|').map(x=>x.trim())).map(p=>({name:p[0],price:p[1]||'',desc:p[2]||''})) };
-  if(has('bc-fq')) cfg.faq=lines(v('bc-fq')).map(l=>pair(l,'=')).filter(Boolean).map(p=>({q:p[0],a:p[1]}));
-  if(has('bc-ok')) cfg.orderbot={ keywords:String(v('bc-ok')||'').split(',').map(x=>x.trim()).filter(Boolean), reply:v('bc-or') };
-  if(has('bc-kick')) cfg.antilink={kick:document.getElementById('bc-kick').checked};
-  if(has('bc-ai')) cfg.aiPrompt=v('bc-ai');
-  if(has('bc-pool')) cfg.sharePool=document.getElementById('bc-pool').checked;
-  const er=document.getElementById('bc-err'); er.style.display='none';
-  try{ const d=await api('/api/bots/'+id+'/config',{method:'PUT',body:JSON.stringify({config:cfg})}); if(botState[id]) botState[id].config=d.config; botCloseCfg(); botSenderLoad(id); }
-  catch(e){ er.textContent=e.message; er.style.display='block'; }
-}
-function copyBotKey(key){
-  navigator.clipboard.writeText(key).catch(()=>{});
-}
-async function loadPlatformBotNumber(){
-  try{
-    const base=getBackendUrl();
-    if(!base) return;
-    const r=await fetch(base+'/api/settings');
-    const data=await r.json();
-    const number=data.settings?.platformBotNumber||'';
-    const card=document.getElementById('platform-bot-card');
-    const link=document.getElementById('platform-bot-link');
-    if(number){
-      link.href='https://wa.me/'+number;
-      link.textContent='💬 Chat ke '+number;
-      card.style.display='block';
-    } else {
-      card.style.display='none';
-    }
-  }catch(e){}
-}
-async function saveOwnerBotNumber(){
-  const number=document.getElementById('owner-bot-number-input').value.trim();
-  if(!number) return;
-  try{
-    await api('/api/settings', {method:'PUT', body:JSON.stringify({platformBotNumber:number})});
-    loadPlatformBotNumber();
-  }catch(e){
-    alert('Gagal menyimpan: '+e.message);
-  }
-}
-async function getPlatformBotNumber(){
-  try{
-    const base=getBackendUrl(); if(!base) return '';
-    const r=await fetch(base+'/api/settings'); const d=await r.json();
-    return (d.settings&&d.settings.platformBotNumber)||'';
-  }catch(e){ return ''; }
-}
-let botMode='personal', botInfo=null;
-const GS_OFF_ONLY=['autoreply','faq','orderbot','broadcast']; // fitur yang butuh chat pribadi pelanggan: tidak jalan di Global
-function gsMinLeft(hm){ const n=new Date(Date.now()+7*3600000), cur=n.getUTCHours()*60+n.getUTCMinutes(); const [h,m]=String(hm).split(':').map(Number); return ((h*60+(m||0))-cur+1440)%1440||1440; }
-function gsLeftTxt(min){ const h=Math.floor(min/60), m=min%60; return (h?h+'j ':'')+m+'m'; }
-function botPaintTop(){
-  const d=botInfo; if(!d) return;
-  const n=v=>Number(v||0).toLocaleString('id-ID');
-  const card=(ic,t,v)=>'<div class="card" style="padding:12px 14px;margin:0"><div style="font-size:12px;color:var(--ink-soft)">'+ic+' '+t+'</div><div style="font-size:26px;font-weight:800;margin-top:4px">'+v+'</div></div>';
-  document.getElementById('bot-stats').innerHTML=card('👥','Total users',n(d.totalUsers))+card('⚡','Senders ready',n(d.poolReady));
-  const g=d.globalStatus||{}, on=!!g.online, col=on?'#22A06B':'var(--amber)';
-  const wins=(g.windows||[]).map(w=>w.join(' - ')).join(', ');
-  const nxt=!on&&g.nextOnAt?' · next ON '+gsLeftTxt(gsMinLeft(g.nextOnAt)):'';
-  document.getElementById('gs-status').innerHTML='<div class="card" style="margin:0 0 12px;padding:12px 14px;border:1px solid '+col+'">'+
-    '<div style="display:flex;align-items:center;gap:10px"><span style="width:10px;height:10px;border-radius:50%;background:'+col+';flex:none"></span>'+
-    '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px;color:'+col+'">STATUS GS : '+(on?'ON':'OFF')+'</div>'+
-    '<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">Slot '+(on?'ON':'OFF')+' · '+botEh(wins)+' WIB'+nxt+'</div></div>'+
-    '<button type="button" class="btn secondary" style="width:auto;padding:8px 12px;margin:0;font-weight:800;color:'+col+';border-color:'+col+'" onclick="document.getElementById(\'gs-jadwal\').classList.toggle(\'hidden\')">JADWAL</button></div>'+
-    '<div id="gs-jadwal" class="hidden note" style="margin-top:8px">Sender Global aktif pada jam: <b>'+botEh(wins)+'</b> WIB. Di luar jam itu bot hanya membalas pemberitahuan istirahat.</div></div>';
-}
-function botPaintPrices(){
-  const d=botInfo; if(!d) return;
-  const sel=document.getElementById('bot-duration'), fmt=x=>'Rp '+Number(x).toLocaleString('id-ID');
-  const keep=sel.value;
-  const opts=botMode==='global'
-    ? [[1,'1 hari',d.globalPrices.day],[7,'1 minggu (7 hari)',d.globalPrices.week],[30,'1 bulan (30 hari)',d.globalPrices.month]]
-    : [[7,'1 minggu (7 hari)',d.prices.week],[30,'1 bulan (30 hari)',d.prices.month]];
-  sel.innerHTML=opts.map(o=>'<option value="'+o[0]+'">'+o[1]+' — '+fmt(o[2])+'</option>').join('');
-  sel.value=opts.some(o=>String(o[0])===keep)?keep:'30';
-}
-function botApplyMode(){
-  const g=botMode==='global';
-  document.querySelectorAll('.bf-row').forEach(r=>{
-    const off=g&&GS_OFF_ONLY.includes(r.dataset.key);
-    r.style.display=off?'none':'flex';
-    if(off) r.querySelector('input').checked=false;
-  });
-  const pe=document.getElementById('src-personal'), ge=document.getElementById('src-global');
-  if(pe&&ge){
-    const st=(on,c)=>on?'background:color-mix(in srgb,'+c+' 18%,transparent);border:1.5px solid '+c+';color:'+c:'background:transparent;border:1.5px solid var(--line);color:var(--ink-soft)';
-    pe.style.cssText+=';'+st(!g,'var(--accent)'); ge.style.cssText+=';'+st(g,'var(--amber)');
-  }
-  const nt=document.getElementById('src-note');
-  if(nt) nt.innerHTML=g
-    ? '<b>Global:</b> pakai nomor pusat, tanpa pasang nomor sendiri. Setelah dikonfirmasi kamu dapat PIN: chat pribadi ke nomor pusat <b>.daftar &lt;PIN&gt;</b>, masukkan nomor pusat ke grup, lalu ketik <b>.pasang</b> di grup. Hanya aktif di jam slot GS. Auto-reply, FAQ, deteksi pesanan, dan broadcast tidak tersedia.'
-    : '<b>Personal:</b> bot jalan di nomor WhatsApp-mu sendiri (dipasang lewat kode pairing). Semua fitur tersedia.';
-}
-function botSetMode(m){ botMode=m; botApplyMode(); botPaintPrices(); }
-async function loadBotPrices(){
-  try{ botInfo=await api('/api/bots/prices'); botPaintTop(); botPaintPrices(); }catch(e){}
-  botApplyMode();
-}
-function renderBotsPage(){
-  loadBotPrices();
-  if(!document.getElementById('bot-features-list').children.length) renderBotFeatureCheckboxes();
-  renderBotList();
-}
-
-/* ---------- video editor templates (preset orisinal kita sendiri) ---------- */
-const VE_TEMPLATES=[
-  { id:'vlog', name:'Vlog Kekinian', desc:'Warm + teks bawah', color:'#E8A33D', filter:'warm', textPos:'bottom', textColor:'#ffffff' },
-  { id:'aesthetic', name:'Aesthetic', desc:'Vintage + teks tengah', color:'#B08968', filter:'vintage', textPos:'middle', textColor:'#f5f0e6' },
-  { id:'bold', name:'Bold & Tajam', desc:'Vivid + teks atas', color:'#5B3DF5', filter:'vivid', textPos:'top', textColor:'#ffffff' },
-  { id:'clean', name:'Clean B&W', desc:'Hitam putih + teks bawah', color:'#555555', filter:'bw', textPos:'bottom', textColor:'#ffffff' },
-  { id:'cool', name:'Cool Tone', desc:'Cool + teks tengah', color:'#3D7BE8', filter:'cool', textPos:'middle', textColor:'#e6f0ff' },
-  { id:'polos', name:'Polos', desc:'Tanpa filter/teks', color:'#9CA3AF', filter:'none', textPos:'bottom', textColor:'#ffffff' },
-];
-let veActiveTemplate=null;
-function renderVeTemplates(){
-  const box=document.getElementById('ve-template-list');
-  if(box.children.length) return;
-  box.innerHTML=VE_TEMPLATES.map(t=>`
-    <button type="button" class="ve-template-card" id="ve-tpl-${t.id}" onclick="applyVeTemplate('${t.id}')">
-      <div class="ve-template-swatch" style="background:${t.color};"></div>
-      <b>${t.name}</b>
-      <small>${t.desc}</small>
-    </button>`).join('');
-}
-function applyVeTemplate(id){
-  const t=VE_TEMPLATES.find(x=>x.id===id);
-  if(!t) return;
-  document.getElementById('ve-filter').value=t.filter;
-  document.getElementById('ve-text-pos').value=t.textPos;
-  document.getElementById('ve-text-color').value=t.textColor;
-  veActiveTemplate=id;
-  document.querySelectorAll('.ve-template-card').forEach(c=>c.classList.remove('active'));
-  document.getElementById('ve-tpl-'+id).classList.add('active');
-}
-
-/* ---------- video editor (FFmpeg.wasm, proses langsung di HP) ---------- */
-let ffmpegInstance = null;
-let ffmpegLoadingPromise = null;
-
-async function loadFFmpeg(){
-  if(ffmpegInstance) return ffmpegInstance;
-  if(ffmpegLoadingPromise) return ffmpegLoadingPromise;
-  ffmpegLoadingPromise = (async () => {
-    const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-    const { toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-    const ffmpeg = new FFmpeg();
-    const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    });
-    ffmpegInstance = ffmpeg;
-    return ffmpeg;
-  })();
-  return ffmpegLoadingPromise;
-}
-
-const VE_FILTER_PRESETS = {
-  vivid: 'eq=contrast=1.15:saturation=1.4:brightness=0.02',
-  bw: 'hue=s=0',
-  warm: 'colorbalance=rs=0.15:gs=0.05:bs=-0.15',
-  cool: 'colorbalance=rs=-0.1:bs=0.15',
-  vintage: 'curves=vintage,eq=contrast=1.05:saturation=0.85',
-};
-
-function veEscapeText(text){
-  return text.replace(/\\/g,'\\\\').replace(/:/g,'\\:').replace(/'/g,"\u2019");
-}
-
-async function runVideoEdit(){
-  const file1=document.getElementById('ve-file1').files[0];
-  const file2=document.getElementById('ve-file2').files[0];
-  const trimStart=document.getElementById('ve-trim-start').value.trim();
-  const trimEnd=document.getElementById('ve-trim-end').value.trim();
-  const text=document.getElementById('ve-text').value.trim();
-  const textPos=document.getElementById('ve-text-pos').value;
-  const textColor=document.getElementById('ve-text-color').value;
-  const filterKey=document.getElementById('ve-filter').value;
-  const sharpen=document.getElementById('ve-sharpen').checked;
-  const err=document.getElementById('ve-err');
-  const btn=document.getElementById('ve-process-btn');
-  const progressCard=document.getElementById('ve-progress-card');
-  const progressText=document.getElementById('ve-progress-text');
-  const resultBox=document.getElementById('ve-result');
-
-  if(!file1){ err.textContent='Pilih video utama dulu ya.'; err.style.display='block'; return; }
-  err.style.display='none';
-  resultBox.style.display='none';
-  btn.disabled=true;
-  progressCard.classList.remove('hidden');
-  progressText.textContent='Memuat mesin video (pertama kali agak lama, ~25MB)...';
-
-  try{
-    const ffmpeg=await loadFFmpeg();
-    const { fetchFile } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
-
-    progressText.textContent='Menyiapkan file...';
-    await ffmpeg.writeFile('input1.mp4', await fetchFile(file1));
-    if(file2) await ffmpeg.writeFile('input2.mp4', await fetchFile(file2));
-
-    let currentFile='input1.mp4';
-
-    if(trimStart||trimEnd){
-      progressText.textContent='Memotong video...';
-      const args=['-i', currentFile];
-      if(trimStart) args.push('-ss', trimStart);
-      if(trimEnd) args.push('-to', trimEnd);
-      args.push('-c:v','libx264','-c:a','aac','trimmed.mp4');
-      await ffmpeg.exec(args);
-      currentFile='trimmed.mp4';
-    }
-
-    if(file2){
-      progressText.textContent='Menggabungkan video...';
-      await ffmpeg.exec(['-i', currentFile, '-vf','scale=720:-2','-r','30','-c:v','libx264','-c:a','aac','norm1.mp4']);
-      await ffmpeg.exec(['-i', 'input2.mp4', '-vf','scale=720:-2','-r','30','-c:v','libx264','-c:a','aac','norm2.mp4']);
-      await ffmpeg.writeFile('concat.txt', "file 'norm1.mp4'\nfile 'norm2.mp4'\n");
-      await ffmpeg.exec(['-f','concat','-safe','0','-i','concat.txt','-c','copy','merged.mp4']);
-      currentFile='merged.mp4';
-    }
-
-    const vfParts=[];
-    if(sharpen) vfParts.push('unsharp=5:5:1.0:5:5:0.0');
-    if(filterKey!=='none' && VE_FILTER_PRESETS[filterKey]) vfParts.push(VE_FILTER_PRESETS[filterKey]);
-    if(text){
-      const yExpr = textPos==='top' ? '40' : textPos==='middle' ? '(h-text_h)/2' : 'h-text_h-40';
-      const hexColor = textColor.replace('#','0x');
-      vfParts.push(`drawtext=text='${veEscapeText(text)}':fontcolor=${hexColor}:fontsize=42:x=(w-text_w)/2:y=${yExpr}:box=1:boxcolor=black@0.4:boxborderw=10`);
-    }
-
-    let outputFile=currentFile;
-    if(vfParts.length>0){
-      progressText.textContent='Menerapkan filter & teks...';
-      outputFile='output.mp4';
-      await ffmpeg.exec(['-i', currentFile, '-vf', vfParts.join(','), '-c:v','libx264','-c:a','aac', outputFile]);
-    } else if(outputFile==='input1.mp4'){
-      outputFile='output.mp4';
-      await ffmpeg.exec(['-i', currentFile, '-c','copy', outputFile]);
-    }
-
-    progressText.textContent='Mengambil hasil...';
-    const data=await ffmpeg.readFile(outputFile);
-    const blob=new Blob([data.buffer], {type:'video/mp4'});
-    const url=URL.createObjectURL(blob);
-    document.getElementById('ve-output').src=url;
-    document.getElementById('ve-download').href=url;
-    resultBox.style.display='block';
-    addLocalHistory('convert', 'Edit video: '+file1.name);
-  }catch(e){
-    err.textContent='Gagal proses video: '+e.message+' — coba video yang lebih pendek/kecil, atau cek koneksi internet (mesin videonya perlu didownload dulu pas pertama kali pakai).';
-    err.style.display='block';
-  }
-  progressCard.classList.add('hidden');
-  btn.disabled=false;
-}
-
-/* ---------- pulsa & paket data ---------- */
-let pulsaProductsCache=null;
-const OPERATOR_PREFIXES_JS={
-  telkomsel:['0811','0812','0813','0821','0822','0823','0851','0852','0853'],
-  indosat:['0814','0815','0816','0855','0856','0857','0858'],
-  xl:['0817','0818','0819','0859','0877','0878'],
-  axis:['0831','0832','0833','0838'],
-  tri:['0895','0896','0897','0898','0899'],
-  smartfren:['0881','0882','0883','0884','0885','0886','0887','0888','0889'],
-};
-function detectOperatorLocal(phone){
-  let p=(phone||'').replace(/[^0-9]/g,'');
-  if(p.startsWith('62')) p='0'+p.slice(2);
-  const prefix=p.slice(0,4);
-  for(const [op,prefixes] of Object.entries(OPERATOR_PREFIXES_JS)){
-    if(prefixes.includes(prefix)) return op;
-  }
-  return null;
-}
-const OPERATOR_LABELS={telkomsel:'Telkomsel',indosat:'Indosat',xl:'XL',axis:'Axis',tri:'Tri',smartfren:'Smartfren'};
-function renderPulsaProductOptions(operator){
-  const select=document.getElementById('pulsa-product');
-  if(!pulsaProductsCache) return;
-  const filtered=pulsaProductsCache.filter(p=>p.operator==='all' || p.operator===operator || !operator);
-  select.innerHTML=filtered.map(p=>`<option value="${p.id}">${p.label} — Rp ${p.price.toLocaleString('id-ID')} (pokok Rp${p.basePrice.toLocaleString('id-ID')} + fee Rp${p.fee.toLocaleString('id-ID')})</option>`).join('');
-}
-function onPulsaPhoneChange(){
-  const phone=document.getElementById('pulsa-phone').value;
-  const label=document.getElementById('pulsa-operator-label');
-  const operator=detectOperatorLocal(phone);
-  if(phone.length>=4){
-    label.textContent = operator ? '📶 Operator terdeteksi: '+OPERATOR_LABELS[operator] : 'Operator tidak terdeteksi — paket data operator tertentu mungkin gak muncul, pulsa tetap bisa.';
-  } else {
-    label.textContent='';
-  }
-  renderPulsaProductOptions(operator);
-}
-async function renderPulsaPage(){
-  if(!getToken()){
-    document.getElementById('pulsa-orders-list').innerHTML='<div class="note">Masuk dulu di halaman Akun.</div>';
-    return;
-  }
-  const select=document.getElementById('pulsa-product');
-  if(!pulsaProductsCache){
-    try{
-      const base=getBackendUrl();
-      const r=await fetch(base+'/api/pulsa/products');
-      const data=await r.json();
-      pulsaProductsCache=data.products||[];
-      renderPulsaProductOptions(null);
-    }catch(e){
-      select.innerHTML='<option>Gagal memuat produk</option>';
-    }
-  }
-  renderPulsaOrders();
-}
-async function runBuyPulsa(){
-  const phone=document.getElementById('pulsa-phone').value.trim();
-  const productId=document.getElementById('pulsa-product').value;
-  const err=document.getElementById('pulsa-err');
-  const btn=document.getElementById('pulsa-buy-btn');
-  if(!phone||!productId){ err.textContent='Isi nomor HP dan pilih produk dulu.'; err.style.display='block'; return; }
-  if(!getToken()){ showPage('akun'); return; }
-  err.style.display='none';
-  btn.disabled=true;
-  btn.innerHTML='<span class="spin"></span> Memproses...';
-  try{
-    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'pulsa', productId, phoneNumber:phone})});
-    showManualPay(data, renderPulsaOrders);
-  }catch(e){
-    err.textContent='Gagal memulai pembayaran: '+e.message;
-    err.style.display='block';
-  }
-  btn.disabled=false;
-  btn.textContent='Beli Sekarang';
-}
-
-/* ---------- efek Premium ---------- */
-const PLAN_RANK={free:0,basic:1,pro:2,owner:3};
-function esc_h(s){ return String(s==null?'':s).replace(/[&<>"\x27]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function homeSoon(){
-  const t=document.createElement('div'); t.className='soon-toast'; t.textContent='Fitur ini segera hadir';
-  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
-}
-function tickJester(){
-  const d=new Date(), tz={timeZone:'Asia/Jakarta'};
-  const de=document.getElementById('jp-date'), te=document.getElementById('jp-time'); if(!de||!te) return;
-  de.textContent=d.toLocaleDateString('id-ID',{...tz,weekday:'short',day:'numeric',month:'short',year:'numeric'}).replace(/\./g,'').replace(',','');
-  te.textContent=d.toLocaleTimeString('id-ID',{...tz,hour:'2-digit',minute:'2-digit',hour12:false}).replace('.',':')+' WIB';
-}
-function renderHomeStatusCard(){
-  const box=document.getElementById('home-status-card'); if(!box) return;
-  const u=store('alltools_user', null);
-  const token=getToken();
-  const row=document.getElementById('story-row');
-  if(!token||!u){
-    box.className='status-card';
-    box.innerHTML='<div class="sc-top"><div class="sc-avatar">?</div><div><div class="sc-name">Belum masuk</div><div class="sc-sub">Masuk buat lihat status akun & kuota kamu</div></div><button class="sc-guest-btn" onclick="showPage(\'akun\')">Masuk →</button></div>';
-    if(row) row.innerHTML='';
-    return;
-  }
-  const plan=u.plan||'free';
-  const planLabel=plan==='owner'?'👑 OWNER':plan==='pro'?'👑 PRO':plan==='basic'?'⭐ BASIC':'FREE';
-  box.className='status-card v2 plan-'+plan;
-  const lim=u.limits||{}; const q=u.quota||{};
-  const pill=(label,val)=>'<span class="pill">'+label+': <b>'+val+'</b></span>';
-  const aiVal = lim.ai==='unlimited' ? 'Unlimited' : ((q.ai||0)+'/'+(lim.ai??'-'));
-  const dlVal = lim.downloads==='unlimited' ? 'Unlimited' : ((q.downloads||0)+'/'+(lim.downloads??'-'));
-  const ini=esc_h((u.name||'?').charAt(0).toUpperCase());
-  box.innerHTML=`
-    <div class="sc-banner"><img src="banner-gojo-poster.jpg" alt=""></div>
-    <div class="sc-body">
-      <div class="sc-top">
-        <div class="sc-avatar ring">${ini}</div>
-        <div><div class="sc-hi">SALAM,</div><div class="sc-name" style="font-size:20px">${esc_h(u.name||'')}</div></div>
-        <span class="sc-plan">${planLabel}</span>
-        <button class="sc-go" onclick="showPage('akun')" aria-label="Akun">›</button>
-      </div>
-      <div class="sc-pills">
-        ${pill('AI', aiVal)}
-        ${pill('Download', dlVal)}
-      </div>
-    </div>`;
-  stRenderStories();
-}
-/* ---------- Global Chat ---------- */
-let gcLast=0, gcMsgs=[], gcTick=0;
-function gcIsMine(m){ const u=store('alltools_user',null); if(!u) return false; return (u.id!=null&&m.user_id!=null)?String(u.id)===String(m.user_id):m.name===u.name; }
-function gcErr(t){ const e=document.getElementById('gc-err'); if(!e) return; e.textContent=t||''; e.style.display=t?'block':'none'; }
-function gcPreview(){
-  const el=document.getElementById('gc-preview'); if(!el) return;
-  const m=gcMsgs[gcMsgs.length-1];
-  el.textContent=m?(m.name+': '+m.text):'Belum ada pesan';
-}
-const GC_BADGE_COLOR={'PREMIUM':'#8B5CF6','VIP':'#F5A623','RESELLER':'#1e9e62','CO-ADMIN':'#3B82F6','ADMIN':'#ef4444'};
-let gcTtl=24*3600*1000; // diganti dari server (ttlMs)
-function gcRender(stick){
-  const box=document.getElementById('gc-list'); if(!box) return;
-  gcMsgs=gcMsgs.filter(m=>!m.ts||Date.now()-m.ts<gcTtl); // pesan kadaluarsa hilang dari layar
-  const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
-  if(!gcMsgs.length){ box.innerHTML='<div class="gc-empty">Belum ada pesan. Jadi yang pertama nyapa!</div>'; return; }
-  box.innerHTML=gcMsgs.map(m=>{
-    const t=m.ts?new Date(m.ts).toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false}).replace('.',':'):'';
-    const bc=GC_BADGE_COLOR[String(m.badge||'').toUpperCase()]||'var(--accent)';
-    const crown=((m.plan==='owner'||m.plan==='pro')?'👑 ':'')+(m.badge?'<span class="gc-badge" style="background:'+bc+'">'+esc_h(m.badge)+'</span> ':'');
-    return '<div class="gc-msg'+(m.plan==='bot'?' bot':(gcIsMine(m)?' me':''))+'"><div class="gc-name">'+crown+esc_h(m.name)+'<span class="gc-time">'+t+'</span></div>'+esc_h(m.text)+'</div>';
-  }).join('');
-  if(stick||near) box.scrollTop=box.scrollHeight;
-}
-async function gcPoll(stick){
-  if(!getToken()) return;
-  try{
-    const d=await api('/api/chat/global?after='+gcLast);
-    const ms=d.messages||[];
-    if(d.ttlMs) gcTtl=d.ttlMs;
-    if(ms.length){ gcMsgs=gcMsgs.concat(ms).slice(-200); gcLast=ms[ms.length-1].id; gcRender(stick); gcPreview(); }
-    else if(stick) gcRender(true);
-    gcErr('');
-  }catch(e){
-    gcErr(e.message==='HTTP 404'?'Server belum mengaktifkan Global Chat.':'Gagal memuat chat.');
-  }
-}
-function gcOpen(){
-  if(!getToken()){ gcMsgs=[]; gcRender(); gcErr('Masuk dulu buat ikut Global Chat.'); return; }
-  gcErr(''); gcRender(true); gcPoll(true);
-}
-async function gcSend(){
-  const inp=document.getElementById('gc-input'), btn=document.getElementById('gc-send');
-  const text=inp.value.trim(); if(!text) return;
-  if(!getToken()){ showPage('akun'); return; }
-  btn.disabled=true; gcErr('');
-  try{
-    const d=await api('/api/chat/global',{method:'POST',body:JSON.stringify({text})});
-    inp.value='';
-    if(d.message){ gcMsgs.push(d.message); gcLast=Math.max(gcLast,d.message.id); gcMsgs=gcMsgs.slice(-200); gcRender(true); gcPreview(); }
-  }catch(e){ gcErr(e.message==='HTTP 404'?'Server belum mengaktifkan Global Chat.':e.message); }
-  btn.disabled=false; inp.focus();
-}
-document.addEventListener('DOMContentLoaded', ()=>{
-  gcPoll(false);
-  setInterval(()=>{
-    if(document.hidden) return;
-    const onChat=!document.getElementById('page-chat').classList.contains('hidden');
-    const onHome=!document.getElementById('page-home').classList.contains('hidden');
-    gcTick++;
-    if(onChat||(onHome&&gcTick%5===0)) gcPoll(false);
-  },4000);
-});
-
-/* ---------- Customer Service (bot + Live Admin) ---------- */
-let csMsgs=[], csLast=0, csStatus='bot', csTopics=[];
-function csErr(t){ const e=document.getElementById('cs-err'); if(!e) return; e.textContent=t||''; e.style.display=t?'block':'none'; }
-function csSetStatus(st){
-  csStatus=st||'bot';
-  const live=csStatus==='live';
-  document.getElementById('cs-foot-bot').classList.toggle('hidden',live);
-  document.getElementById('cs-foot-live').classList.toggle('hidden',!live);
-  const sub=document.getElementById('cs-sub');
-  sub.textContent=live?'🟢 Live Admin aktif':'Asisten bot · pilih topik';
-  sub.classList.toggle('live',live);
-}
-function csRender(stick){
-  const box=document.getElementById('cs-list'); if(!box) return;
-  const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
-  if(!csMsgs.length){
-    box.innerHTML='<div class="cs-empty">🎧<b>Ruang bantuan siap</b>Ketuk tombol di bawah untuk pilih topik bantuan.</div>'; return;
-  }
-  box.innerHTML=csMsgs.map(m=>{
-    const t=m.ts?new Date(m.ts).toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',hour12:false}).replace('.',':'):'';
-    const who=m.from==='admin'?'🧑‍💻 Admin':(m.from==='bot'?'🤖 AllTools Assistant':'');
-    return '<div class="cs-msg '+esc_h(m.from)+'">'+(who?'<div class="cs-who">'+who+'<span class="cs-time">'+t+'</span></div>':'')+esc_h(m.text)+'</div>';
-  }).join('');
-  if(stick||near) box.scrollTop=box.scrollHeight;
-}
-function csAdd(list,stick){
-  let added=false;
-  for(const m of list||[]){ if(m.id>csLast){ csMsgs.push(m); csLast=m.id; added=true; } }
-  csMsgs=csMsgs.slice(-150);
-  if(added||stick) csRender(stick);
-}
-async function csPoll(stick){
-  if(!getToken()) return;
-  try{
-    const d=await api('/api/support/me?after='+csLast);
-    if(d.topics) csTopics=d.topics;
-    csSetStatus(d.status);
-    csAdd(d.messages,stick);
-    if(stick&&!csMsgs.length) csRender(true);
-    csErr('');
-  }catch(e){
-    csErr(e.message==='HTTP 404'?'Server belum mengaktifkan Customer Service.':'Gagal memuat chat.');
-  }
-}
-function csOpen(){
-  if(!getToken()){ csMsgs=[]; csLast=0; csSetStatus('bot'); csRender(); csErr('Masuk dulu untuk memakai Customer Service.'); return; }
-  csErr(''); csRender(true); csPoll(true);
-}
-function csOpenSheet(){
-  if(!getToken()){ showPage('akun'); return; }
-  const list=csTopics.length?csTopics:[{id:'admin',label:'🧑‍💻 Bicara dengan Live Admin',live:true}];
-  document.getElementById('cs-topics').innerHTML=list.map(t=>'<button class="cs-topic'+(t.live?' live':'')+'" onclick="csPick(\''+esc_h(t.id)+'\')"><span>'+esc_h(t.label)+'</span><span>›</span></button>').join('');
-  document.getElementById('cs-sheet').classList.remove('hidden');
-}
-function csCloseSheet(){ document.getElementById('cs-sheet').classList.add('hidden'); }
-async function csPick(id){
-  csCloseSheet(); csErr('');
-  try{
-    const d=await api('/api/support/topic',{method:'POST',body:JSON.stringify({topic:id})});
-    csSetStatus(d.status); csAdd(d.messages,true);
-    if(d.status==='live'){ const i=document.getElementById('cs-input'); if(i) i.focus(); }
-  }catch(e){ csErr(e.message); }
-}
-async function csSend(){
-  const inp=document.getElementById('cs-input'), btn=document.getElementById('cs-send');
-  const text=inp.value.trim(); if(!text) return;
-  btn.disabled=true; csErr('');
-  try{
-    const d=await api('/api/support/message',{method:'POST',body:JSON.stringify({text})});
-    inp.value=''; csAdd([d.message],true);
-  }catch(e){ csErr(e.message); }
-  btn.disabled=false; inp.focus();
-}
-async function csEnd(){
-  if(!confirm('Akhiri chat dengan admin?')) return;
-  try{ const d=await api('/api/support/end',{method:'POST'}); csSetStatus(d.status); csPoll(true); }catch(e){ csErr(e.message); }
-}
-document.addEventListener('DOMContentLoaded',()=>{
-  setInterval(()=>{
-    if(document.hidden) return;
-    const pg=document.getElementById('page-bantuan');
-    if(pg&&!pg.classList.contains('hidden')) csPoll(false);
-  },4000);
-});
-
-/* ---------- AllTools Shop ---------- */
-let shopData={builtin:[],custom:[]}, shopHistOpen=false;
-const shopRp=n=>'Rp '+Number(n||0).toLocaleString('id-ID');
-function shopErr(t){ const e=document.getElementById('shop-err'); if(!e) return; e.textContent=t||''; e.style.display=t?'block':'none'; }
-function shopRole(){
-  const u=store('alltools_user',null);
-  if(!u||!getToken()) return 'Belum masuk';
-  return u.roleBadge||(u.plan&&u.plan!=='free'?String(u.plan).toUpperCase():'FREE');
-}
-function shopCurRank(){
-  const u=store('alltools_user',null); if(!u||!getToken()||!u.roleBadge) return 0;
-  const it=shopData.custom.find(x=>x.roleBadge===u.roleBadge); return it?(it.rank||0):0;
-}
-function shopIsOwned(it,isCustom){
-  const u=store('alltools_user',null); if(!u||!getToken()) return false;
-  return !!isCustom&&shopCurRank()>=(it.rank||1);
-}
-function shopCard(it,isCustom){
-  const owned=shopIsOwned(it,isCustom);
-  const u0=store('alltools_user',null); const same=owned&&u0&&u0.roleBadge===it.roleBadge;
-  const price=owned?(same?'Aktif':'Tercakup'):shopRp(it.price)+(it.perMonth?'<small>/bulan</small>':(it.from?'<small>mulai dari</small>':''));
-  return '<button class="shop-card'+(owned?' owned':'')+'" onclick="shopOpen(\''+esc_h(it.id)+'\','+(isCustom?1:0)+')">'+
-    '<span class="si">'+esc_h(it.icon||'🛒')+'</span>'+
-    '<span class="sb"><div class="sn">'+esc_h(it.name)+'</div><div class="sd">'+esc_h(it.desc||'')+'</div></span>'+
-    '<span class="sp">'+price+'</span></button>';
-}
-function shopRender(){
-  const box=document.getElementById('shop-list'); if(!box) return;
-  box.innerHTML=shopData.custom.length
-    ?'<div class="shop-sec">Titel</div>'+shopData.custom.map(i=>shopCard(i,true)).join('')
-    :'<div class="note" style="margin-top:12px">Belum ada titel yang dijual.</div>';
-  const sub=document.getElementById('shop-sub'); if(sub) sub.textContent='Beli titel · Titelmu: '+shopRole();
-}
-async function renderShopPage(){
-  shopErr('');
-  shopRender();
-  try{ const d=await api('/api/shop/items'); shopData={builtin:[],custom:d.custom||[]}; shopRender(); }
-  catch(e){ shopErr(e.message==='no-backend'?'Isi dulu alamat server di halaman Akun.':'Gagal memuat toko.'); }
-  if(getToken()){ try{ await refreshMe(); shopRender(); }catch(e){} }
-  if(shopHistOpen) shopLoadHist();
-}
-function shopFind(id,isCustom){ return (isCustom?shopData.custom:shopData.builtin).find(x=>x.id===id); }
-function shopOpen(id,isCustom){
-  const it=shopFind(id,!!isCustom); if(!it) return;
-  if(shopIsOwned(it,!!isCustom)){ return; }
-  const priceTxt=shopRp(it.price)+(it.perMonth?' / bulan':(it.from?' (mulai dari)':''));
-  const btnTxt=(!isCustom&&it.go.type==='page')?'Lanjut ke halaman pembelian':'Beli sekarang';
-  document.getElementById('shop-detail').innerHTML=
-    '<div class="big">'+esc_h(it.icon||'🛒')+'</div><h3>'+esc_h(it.name)+'</h3><p>'+esc_h(it.desc||'')+'</p>'+
-    (isCustom&&it.kind==='role'?'<p>Titel <b>'+esc_h(it.roleBadge)+'</b> akan tampil di akun &amp; Global Chat.</p>':'')+
-    ((it.perks&&it.perks.length)?'<div style="text-align:left;margin:6px 0 4px;font-size:13px;line-height:1.7">'+it.perks.map(p=>'✅ '+esc_h(p)).join('<br>')+'</div>':'')+
-    '<div class="price">'+priceTxt+'</div>'+
-    '<button class="btn" onclick="shopBuy(\''+esc_h(id)+'\','+(isCustom?1:0)+')">'+btnTxt+'</button>'+
-    '<button class="btn secondary" style="margin-top:8px" onclick="shopCloseSheet()">Batal</button>';
-  document.getElementById('shop-sheet').classList.remove('hidden');
-}
-function shopCloseSheet(){ document.getElementById('shop-sheet').classList.add('hidden'); }
-async function shopBuy(id,isCustom){
-  const it=shopFind(id,!!isCustom); if(!it) return;
-  shopCloseSheet();
-  if(!getToken()){ showPage('akun'); return; }
-  if(!isCustom){
-    if(it.go.type==='premium') return activatePremium(it.go.plan);
-    return showPage(it.go.page);
-  }
-  try{
-    const data=await api('/api/manual/create',{method:'POST',body:JSON.stringify({type:'shop',itemId:id})});
-    showManualPay(data,()=>{ if(shopHistOpen) shopLoadHist(); },'shop');
-  }catch(e){ shopErr(e.message); }
-}
-function shopToggleHist(){
-  shopHistOpen=!shopHistOpen;
-  const el=document.getElementById('shop-hist');
-  el.classList.toggle('hidden',!shopHistOpen);
-  if(shopHistOpen) shopLoadHist();
-}
-async function shopLoadHist(){
-  const el=document.getElementById('shop-hist');
-  if(!getToken()){ el.innerHTML='<div class="note">Masuk dulu untuk melihat riwayat.</div>'; return; }
-  el.innerHTML='<div class="note">Memuat riwayat...</div>';
-  try{
-    const d=await api('/api/shop/mine');
-    if(!d.orders.length){ el.innerHTML='<div class="note">Belum ada pembelian item toko.</div>'; return; }
-    const st={paid:['Berhasil','#1e9e62'],failed:['Ditolak','var(--danger)'],waiting_confirmation:['Dicek admin','#F5A623'],awaiting_payment:['Belum bayar','#8a8fa3']};
-    el.innerHTML='<div class="shop-sec" style="margin-top:6px">Riwayat pembelian</div>'+d.orders.map(o=>{
-      const s=st[o.status]||[o.status,'#8a8fa3'];
-      return '<div class="card" style="margin-top:8px;padding:12px 14px;"><div class="row"><b style="font-size:14px">'+esc_h(o.name)+'</b><span class="shop-st" style="background:'+s[1]+'">'+s[0]+'</span></div>'+
-        '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px">'+shopRp(o.price)+' · '+new Date(o.createdAt).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+
-        (o.note?'<div style="font-size:12px;margin-top:6px">'+esc_h(o.note)+'</div>':'')+'</div>';
-    }).join('');
-  }catch(e){ el.innerHTML='<div class="note">'+esc_h(e.message)+'</div>'; }
-}
-
-function applyPremiumTheme(){
-  const u=store('alltools_user', null);
-  const plan=(u&&getToken()&&u.plan)||'free';
-  const b=document.body;
-  b.classList.remove('plan-free','plan-basic','plan-pro','plan-owner','premium');
-  b.classList.add('plan-'+plan);
-  if(plan!=='free') b.classList.add('premium');
-  const chip=document.getElementById('brand-chip');
-  if(chip) chip.textContent=plan==='owner'?'👑 OWNER':plan==='pro'?'👑 PRO':plan==='basic'?'⭐ PREMIUM':'';
-}
-function celebratePremium(plan){
-  const cv=document.createElement('canvas');
-  cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100000;';
-  cv.width=innerWidth; cv.height=innerHeight; document.body.appendChild(cv);
-  const ctx=cv.getContext('2d'), cols=['#F5A623','#FFD76A','#8B7BFF','#C77DFF','#5BE3A8','#ffffff'];
-  const ps=Array.from({length:140},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*0.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,s:5+Math.random()*6,r:Math.random()*6,vr:(Math.random()-.5)*.3,c:cols[Math.random()*cols.length|0]}));
-  const t0=performance.now();
-  (function tick(t){
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);ctx.restore();});
-    if(t-t0<3200) requestAnimationFrame(tick); else cv.remove();
-  })(t0);
-  const name=plan==='pro'?'Premium Pro':plan==='owner'?'Owner':'Premium Basic';
-  const m=document.createElement('div');
-  m.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px;';
-  m.innerHTML='<div class="card" style="max-width:340px;text-align:center;margin:0;"><div style="font-size:56px;animation:crown 1.2s ease-in-out infinite;">👑</div><b style="font-size:18px;">Selamat! Kamu sekarang '+name+'</b><div class="note">Pembayaranmu sudah dikonfirmasi. Semua fitur premium sudah aktif.</div><button class="btn" onclick="this.parentNode.parentNode.remove()">Mantap!</button></div>';
-  document.body.appendChild(m);
-  try{ renderPremiumPage(); renderAkunPage(); }catch(e){}
-}
-// Setelah user menekan "Saya sudah bayar" untuk Premium, cek status tiap 10 detik
-// sampai paketnya naik (atau maksimal 30 menit).
-let premiumWatch=null;
-function startPremiumWatch(){
-  if(premiumWatch) return;
-  const startRank=PLAN_RANK[(store('alltools_user', null)||{}).plan]||0;
-  let n=0;
-  premiumWatch=setInterval(async()=>{
-    n++;
-    await refreshMe();
-    const rank=PLAN_RANK[(store('alltools_user', null)||{}).plan]||0;
-    if(rank>startRank||n>180){ clearInterval(premiumWatch); premiumWatch=null; }
-  },10000);
-}
-document.addEventListener('DOMContentLoaded', applyPremiumTheme);
-document.addEventListener('DOMContentLoaded', renderHomeStatusCard);
-document.addEventListener('DOMContentLoaded', ()=>{ tickJester(); setInterval(tickJester,15000); });
-document.addEventListener('DOMContentLoaded', ()=>{
-  const v=document.getElementById('hero-video'); if(!v) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches){ v.removeAttribute('autoplay'); v.pause(); return; }
-  // Putar hanya saat banner kelihatan, biar hemat baterai dan kuota.
-  new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) v.play().catch(()=>{}); else v.pause(); }),{threshold:.2}).observe(v);
-});
-document.addEventListener('visibilitychange', ()=>{ if(!document.hidden&&getToken()) refreshMe(); });
-
-/* ---------- AntiMaling ---------- */
-async function loadAmPrice(){
-  try{
-    const d=await api('/api/antimaling/price');
-    document.getElementById('am-price-label').textContent='Rp '+Number(d.price).toLocaleString('id-ID');
-  }catch(e){}
-}
-async function runBuyAm(){
-  const name=document.getElementById('am-name').value.trim();
-  const err=document.getElementById('am-err'); err.style.display='none';
-  if(!name){ err.textContent='Isi nama HP dulu.'; err.style.display='block'; return; }
-  const btn=document.getElementById('am-buy-btn'); btn.disabled=true;
-  try{
-    const data=await api('/api/manual/create', {method:'POST', body:JSON.stringify({type:'antimaling', name})});
-    showManualPay(data, ()=>{ document.getElementById('am-name').value=''; renderAmDeviceList(); });
-  }catch(e){ err.textContent=e.message; err.style.display='block'; }
-  btn.disabled=false;
-}
-function amTimeAgo(iso){
-  if(!iso) return 'belum pernah online';
-  const s=(Date.now()-new Date(iso).getTime())/1000;
-  if(s<60) return 'baru saja'; if(s<3600) return Math.floor(s/60)+' menit lalu';
-  if(s<86400) return Math.floor(s/3600)+' jam lalu'; return Math.floor(s/86400)+' hari lalu';
-}
-async function renderAmDeviceList(){
-  const list=document.getElementById('am-list');
-  try{
-    const { devices } = await api('/api/antimaling/devices');
-    if(!devices.length){ list.innerHTML='<div class="note">Belum ada HP yang diproteksi.</div>'; return; }
-    list.innerHTML=devices.map(d=>{
-      const loc=d.lastLocation;
-      const mapUrl=loc?('https://maps.google.com/?q='+loc.lat+','+loc.lng):null;
-      return `<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <b style="font-size:13px;">${esc(d.name)}</b>
-          <span style="font-size:11px;padding:2px 8px;border-radius:999px;color:#fff;background:${d.paired?(d.online?'#1E9E62':'#6b7280'):'#D98A00'}">${d.paired?(d.online?'Online':'Offline'):'Menunggu pairing'}</span>
-        </div>
-        ${!d.paired?`<div class="note" style="margin-top:8px;">Kode pairing: <b>${esc(d.pairCode)}</b> — masukkan di apk AntiMaling di HP ini.</div>`:`
-        <div style="font-size:12px;color:var(--ink-soft,#888);margin-top:6px;line-height:1.6;">
-          Terakhir online: ${amTimeAgo(d.lastSeen)}<br>
-          Baterai: ${d.battery?d.battery.percent+'%'+(d.battery.charging?' (mengisi)':''):'-'}<br>
-          Lokasi: ${loc?`<a href="${mapUrl}" target="_blank">buka peta</a>`:'belum ada data'}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
-          <button class="btn secondary" style="margin:0;" onclick="amCmd('${d.id}','locate')">📍 Lacak</button>
-          <button class="btn secondary" style="margin:0;" onclick="amCmd('${d.id}','alarm')">🔊 Alarm</button>
-          <button class="btn secondary" style="margin:0;" onclick="amLock('${d.id}')">🔒 Kunci</button>
-          <button class="btn secondary" style="margin:0;" onclick="amCmd('${d.id}','stop_alarm')">🔇 Stop alarm</button>
-          <button class="btn secondary" style="margin:0;" onclick="amPhoto('${d.id}')">📷 Ambil Foto</button>
-          <button class="btn secondary" style="margin:0;" onclick="amShowPhoto('${d.id}')">🖼️ Lihat Foto</button>
-        </div>
-        <div id="am-photo-${d.id}" class="hide" style="margin-top:10px;"></div>
-        <button class="btn" style="background:#D64545;margin-top:8px;" onclick="amWipe('${d.id}','${esc(d.name)}')">⚠️ Hapus data HP (wipe)</button>`}
-      </div>`;
-    }).join('');
-  }catch(e){ list.innerHTML='<div class="note">Gagal memuat: '+esc(e.message)+'</div>'; }
-}
-async function amCmd(deviceId,type,extra){
-  try{ await api('/api/antimaling/command', {method:'POST', body:JSON.stringify(Object.assign({deviceId,type},extra||{}))}); alert('Perintah terkirim. HP butuh beberapa detik untuk online dan menjalankannya.'); }
-  catch(e){ alert(e.message); }
-}
-async function amLock(deviceId){
-  const pin=prompt('Atur PIN buka kunci (4-8 digit). Kosongkan untuk pakai PIN lama/bawaan device ini:','');
-  if(pin===null) return; // batal
-  if(pin && !/^\d{4,8}$/.test(pin)){ alert('PIN harus 4-8 digit angka.'); return; }
-  await amCmd(deviceId,'lock', pin?{pin}:undefined);
-}
-async function amPhoto(deviceId){
-  await amCmd(deviceId,'photo');
-  alert('Kamera depan HP akan mengambil 1 foto diam-diam dalam beberapa detik. Tekan "Lihat Foto" setelah itu.');
-}
-async function amShowPhoto(deviceId){
-  const box=document.getElementById('am-photo-'+deviceId);
-  box.classList.remove('hide');
-  box.innerHTML='<div class="note">Memuat foto...</div>';
-  try{
-    const base=getBackendUrl();
-    const r=await fetch(base+'/api/antimaling/device/photo/'+deviceId, {headers:{Authorization:'Bearer '+getToken()}});
-    if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.error||'Belum ada foto.'); }
-    const blob=await r.blob();
-    const url=URL.createObjectURL(blob);
-    box.innerHTML='<img src="'+url+'" style="width:100%;border-radius:12px;border:1px solid var(--line);">';
-  }catch(e){ box.innerHTML='<div class="note">'+esc(e.message)+'</div>'; }
-}
-async function amWipe(deviceId,name){
-  if(!confirm('Yakin hapus SEMUA data di "'+name+'"? Tindakan ini tidak bisa dibatalkan.')) return;
-  amCmd(deviceId,'wipe');
-}
-function renderAmPage(){ loadAmPrice(); renderAmDeviceList(); }
-let amWatch=null;
-
-/* ---------- pembayaran manual (QRIS / DANA) ---------- */
-let manualPayCtx=null;
-function showManualPay(d, after, type){
-  manualPayCtx={orderId:d.orderId, after, type};
-  document.getElementById('mp-title').textContent=d.label;
-  document.getElementById('mp-total').textContent='Rp '+Number(d.total).toLocaleString('id-ID');
-  document.getElementById('mp-dana').textContent=d.dana;
-  const err=document.getElementById('mp-err'); err.style.display='none';
-  const btn=document.getElementById('mp-claim'); btn.disabled=false; btn.textContent='Saya sudah bayar';
-  document.getElementById('manual-pay').style.display='block';
-}
-function closeManualPay(){
-  document.getElementById('manual-pay').style.display='none';
-  if(manualPayCtx&&manualPayCtx.after){ try{ manualPayCtx.after(); }catch(e){} }
-}
-async function claimManualPay(){
-  const btn=document.getElementById('mp-claim'), err=document.getElementById('mp-err');
-  btn.disabled=true; btn.textContent='Mengirim...'; err.style.display='none';
-  try{
-    await api('/api/manual/claim', {method:'POST', body:JSON.stringify({orderId:manualPayCtx.orderId})});
-    alert('Terima kasih! Pembayaranmu sedang dicek admin, biasanya beberapa menit.');
-    if(manualPayCtx.type==='premium') startPremiumWatch();
-    closeManualPay();
-  }catch(e){
-    err.textContent=e.message; err.style.display='block';
-    btn.disabled=false; btn.textContent='Saya sudah bayar';
-  }
-}
-function copyManualDana(){
-  const n=document.getElementById('mp-dana').textContent;
-  try{ navigator.clipboard.writeText(n); alert('Nomor DANA disalin.'); }catch(e){ alert('Nomor DANA: '+n); }
-}
-async function renderPulsaOrders(){
-  const list=document.getElementById('pulsa-orders-list');
-  try{
-    const data=await api('/api/pulsa/orders');
-    const orders=data.orders||[];
-    if(orders.length===0){ list.innerHTML='<div class="note">Belum ada pesanan.</div>'; return; }
-    list.innerHTML=orders.map(o=>`
-      <div class="card" style="margin-top:10px;padding:12px 16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <b style="font-size:13px;">${o.productLabel}</b>
-          <span style="font-size:11px;padding:2px 8px;border-radius:999px;color:#fff;background:${o.status==='paid'?'var(--accent)':o.status==='failed'?'var(--danger)':'var(--amber)'};">${o.status==='paid'?'Dibayar':o.status==='failed'?'Gagal':'Menunggu'}</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Ke: ${o.phoneNumber} · Rp ${o.price.toLocaleString('id-ID')}</div>
-      </div>`).join('');
-  }catch(e){
-    list.innerHTML='<div class="note">'+(e.message==='no-backend'?'Isi dulu alamat server di halaman Akun.':e.message)+'</div>';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', renderAkunPage);
-
-// Splash screen 3D: tampil minimal 1.4 detik biar animasinya kelihatan,
-// terus hilang otomatis begitu halaman siap.
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    if (splash) splash.classList.add('hide');
-  }, 1400);
-});
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-  });
-}
-</script>
-<div id="manual-pay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);overflow:auto;padding:16px;">
-  <div class="card" style="max-width:420px;margin:0 auto;">
-    <b id="mp-title"></b>
-    <div id="mp-total" style="font-size:26px;font-weight:700;margin:6px 0;"></div>
-    <div class="note" style="margin-top:8px;">Bayar <b>persis</b> sesuai nominal di atas. Dua digit di belakang adalah kode unik supaya pembayaranmu mudah dicocokkan.</div>
-    <span class="field-label" style="margin-top:14px;">Scan QRIS</span>
-    <img src="qris.jpg" alt="QRIS" style="width:100%;border-radius:12px;border:1px solid var(--line);">
-    <span class="field-label" style="margin-top:14px;">Atau transfer ke DANA</span>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
-      <b id="mp-dana" style="font-size:16px;"></b>
-      <button class="btn secondary" style="width:auto;margin:0;padding:8px 14px;" onclick="copyManualDana()">Salin</button>
-    </div>
-    <div class="err" id="mp-err"></div>
-    <button class="btn" id="mp-claim" onclick="claimManualPay()">Saya sudah bayar</button>
-    <button class="btn secondary" onclick="closeManualPay()">Tutup</button>
   </div>
-</div>
-<script>
-/* ---------- layar loading Owner: Sasuke + Rasengan ---------- */
-(function(){
-  const isOwner=document.documentElement.classList.contains('owner-splash-on');
-  const hr=document.querySelector('.hero-ras');
-  if(isOwner&&hr){ hr.src='rasengan.mp4'; hr.play().catch(()=>{}); }
-  const sp=document.getElementById('owner-splash'); if(!sp) return;
-  if(!isOwner){ sp.remove(); return; }
-  const rv=document.getElementById('os-rasv'); if(rv){ rv.src='rasengan.mp4'; rv.play().catch(()=>{}); }
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const fill=document.getElementById('os-fill'), pct=document.getElementById('os-pct'), cv=document.getElementById('os-cv'), ras=document.getElementById('os-ras');
-  try{ const u=store('alltools_user', null); if(u&&u.name) document.getElementById('os-hello').textContent='👑 Selamat datang, '+u.name; }catch(e){}
-  let stop=false, loaded=document.readyState==='complete', p=0;
-  if(!loaded) addEventListener('load', ()=>{ loaded=true; });
-  const MIN=reduce?900:2600, MAX=7000, t0=performance.now();
-  function hide(){ if(stop) return; stop=true; sp.classList.add('out'); setTimeout(()=>sp.remove(),700); }
-  setTimeout(hide, MAX+1500);
-  (function tick(now){
-    if(stop) return;
-    const el=now-t0, ready=(loaded&&el>=MIN)||el>=MAX;
-    const target=ready?100:Math.min(90,(el/MIN)*90);
-    p+=(target-p)*0.12; if(ready&&p>99.5) p=100;
-    fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';
-    ras.style.setProperty('--k',(0.6+0.55*p/100).toFixed(3));
-    if(p>=100){ ras.classList.add('burst'); setTimeout(hide,450); return; }
-    requestAnimationFrame(tick);
-  })(t0);
-  if(reduce||!cv) return;
-  const ctx=cv.getContext('2d'), dpr=Math.min(devicePixelRatio||1,2);
-  const W=cv.width=innerWidth*dpr, H=cv.height=innerHeight*dpr;
-  const cols=['255,70,90','150,120,255','90,190,255'];
-  const mk=init=>({x:Math.random()*W,y:init?Math.random()*H:H+20,r:(1+Math.random()*2.4)*dpr,vy:-(.3+Math.random()*.9)*dpr,vx:(Math.random()-.5)*.4*dpr,a:.25+Math.random()*.55,c:cols[Math.random()*3|0]});
-  const ps=Array.from({length:34},()=>mk(true));
-  (function draw(){
-    if(stop) return;
-    ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
-    for(const q of ps){
-      q.x+=q.vx+Math.sin(q.y/60)*.3*dpr; q.y+=q.vy;
-      if(q.y<-20) Object.assign(q,mk(false));
-      const g=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,q.r*4);
-      g.addColorStop(0,'rgba('+q.c+','+q.a+')'); g.addColorStop(1,'rgba('+q.c+',0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*4,0,6.283); ctx.fill();
-    }
-    requestAnimationFrame(draw);
-  })();
-})();
 
-/* ---------- Status & Musik ---------- */
-let stItems=[], stTrack=null, stSearchOn=null;
-function stSpId(v){ const m=String(v||'').match(/spotify\.com\/(?:intl-[a-z-]+\/)?track\/([A-Za-z0-9]{22})/)||String(v||'').match(/spotify:track:([A-Za-z0-9]{22})/); return m?m[1]:null; }
-function stClose(){ const e=document.getElementById('st-modal'); if(e) e.remove(); }
-function stModal(inner){
-  stClose();
-  const m=document.createElement('div'); m.id='st-modal';
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;display:flex;align-items:flex-end;justify-content:center;';
-  m.onclick=e=>{ if(e.target===m) stClose(); };
-  m.innerHTML='<div style="background:var(--card,#fff);color:var(--ink,#1B1830);width:100%;max-width:520px;max-height:85vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 16px 24px;">'+inner+'</div>';
-  document.body.appendChild(m);
-}
-async function stLoad(){
-  if(!getToken()){ stItems=[]; stRenderStories(); stRenderMusic(); return; }
-  try{ const d=await api('/api/status'); stItems=d.items||[]; }catch(e){}
-  stRenderStories(); stRenderMusic();
-}
-function stRenderStories(){
-  const row=document.getElementById('story-row'); if(!row) return;
-  const u=store('alltools_user',null); if(!u||!getToken()){ row.innerHTML=''; return; }
-  const ini=esc_h((u.name||'?').charAt(0).toUpperCase());
-  let h='<button class="story" onclick="stCompose()"><div class="sa">'+ini+'<i>+</i></div>Tambah</button>';
-  const groups={};
-  stItems.forEach(it=>{ (groups[it.userId]=groups[it.userId]||[]).push(it); });
-  Object.keys(groups).forEach(uid=>{
-    const g=groups[uid], first=g[0];
-    h+='<button class="story" onclick="stView(\''+esc_h(uid)+'\')"><div class="sa" style="box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent)">'+esc_h((first.name||'?').charAt(0).toUpperCase())+'</div><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(first.mine?'Kamu':esc_h(first.name))+'</span></button>';
+<script>
+  // ---------- owner auth (disimpan lokal di HP ini) ----------
+  const STORAGE_KEY = 'guardline_owner_account';
+  const LOGGED_IN_KEY = 'guardline_logged_in';
+
+  // Beberapa browser Android membatasi localStorage saat file dibuka
+  // lewat content://Download (bukan http/https). Deteksi itu di sini
+  // dan jatuh ke penyimpanan sementara di memori supaya apk tetap jalan
+  // (hanya saja sesi tidak akan diingat setelah apk ditutup total).
+  let storageAvailable = true;
+  try {
+    localStorage.setItem('__gl_test__', '1');
+    localStorage.removeItem('__gl_test__');
+  } catch (e) {
+    storageAvailable = false;
+  }
+  let memoryAccount = null;
+  let memoryLoggedIn = false;
+
+  function simpleHash(str){
+    let h = 0;
+    for (let i = 0; i < str.length; i++){
+      h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+    }
+    return h.toString(36) + str.length;
+  }
+
+  function getAccount(){
+    if (!storageAvailable) return memoryAccount;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(e){ return memoryAccount; }
+  }
+  function saveAccount(email, passHash){
+    const data = { email, passHash };
+    memoryAccount = data;
+    if (storageAvailable){
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e){}
+    }
+  }
+  function clearAccount(){
+    memoryAccount = null;
+    memoryLoggedIn = false;
+    if (storageAvailable){
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LOGGED_IN_KEY);
+      } catch(e){}
+    }
+  }
+  function isLoggedIn(){
+    if (!storageAvailable) return memoryLoggedIn;
+    try { return localStorage.getItem(LOGGED_IN_KEY) === '1'; }
+    catch(e){ return memoryLoggedIn; }
+  }
+  function setLoggedIn(val){
+    memoryLoggedIn = val;
+    if (storageAvailable){
+      try {
+        if (val) localStorage.setItem(LOGGED_IN_KEY, '1');
+        else localStorage.removeItem(LOGGED_IN_KEY);
+      } catch(e){}
+    }
+  }
+
+  const loginScreen = document.getElementById('login-screen');
+  const appContent = document.getElementById('app-content');
+  const signupCard = document.getElementById('signup-card');
+  const loginCard = document.getElementById('login-card');
+  const signupForm = document.getElementById('signup-form');
+  const signupError = document.getElementById('signup-error');
+  const loginForm = document.getElementById('login-form');
+  const loginError = document.getElementById('login-error');
+
+  function enterApp(){
+    loginScreen.style.display = 'none';
+    appContent.classList.add('ready');
+    initScene();
+  }
+
+  function showAuthScreen(){
+    const account = getAccount();
+    if (account){
+      signupCard.style.display = 'none';
+      loginCard.style.display = 'block';
+    } else {
+      loginCard.style.display = 'none';
+      signupCard.style.display = 'block';
+    }
+  }
+
+  if (getAccount() && isLoggedIn()){
+    enterApp();
+  } else {
+    showAuthScreen();
+  }
+
+  signupForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signup-email').value.trim();
+    const pass = document.getElementById('signup-pass').value;
+    if (!email || pass.length < 6){
+      signupError.style.display = 'block';
+      return;
+    }
+    signupError.style.display = 'none';
+    saveAccount(email, simpleHash(pass));
+    setLoggedIn(true);
+    enterApp();
   });
-  row.innerHTML=h;
-}
-function stRenderMusic(){
-  const t=document.getElementById('st-music-t'), s=document.getElementById('st-music-s'); if(!t||!s) return;
-  const it=stItems.find(x=>x.track);
-  if(it){ t.style.color=''; t.textContent=it.track.title||'Lagu Spotify'; s.textContent=(it.track.artist||'')+' · status '+it.name; }
-  else { t.style.color='var(--ink-soft)'; t.textContent='Belum ada lagu'; s.textContent='Pasang lagu di status kamu'; }
-}
-function stMusicRow(){
-  const it=stItems.find(x=>x.track);
-  if(it) stView(String(it.userId)); else stCompose(true);
-}
-function stEmbed(track){
-  if(!track||!track.id) return '';
-  return '<iframe style="border:0;border-radius:12px;margin-top:10px;width:100%;height:152px" src="https://open.spotify.com/embed/track/'+esc_h(track.id)+'" allow="encrypted-media" loading="lazy"></iframe>';
-}
-function stView(uid){
-  const list=stItems.filter(x=>String(x.userId)===String(uid));
-  if(!list.length){ stClose(); return; }
-  const u=store('alltools_user',null)||{};
-  const h=list.map(it=>`<div style="border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px">
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)"><b style="color:var(--ink)">${esc_h(it.name)}</b><span>${amTimeAgo(new Date(it.ts).toISOString())}</span></div>
-    ${it.text?'<div style="margin-top:8px;font-size:15px;white-space:pre-wrap">'+esc_h(it.text)+'</div>':''}
-    ${it.track?'<div style="margin-top:8px;font-size:13px">🎵 '+esc_h(it.track.title||'')+' — '+esc_h(it.track.artist||'')+'</div>'+stEmbed(it.track):''}
-    ${(it.mine||u.plan==='owner')?'<button class="btn secondary" style="margin:10px 0 0;background:none;color:#D64545" onclick="stDelete(\''+esc_h(it.id)+'\')">Hapus status</button>':''}
-  </div>`).join('');
-  stModal('<div style="font-weight:800;font-size:16px">Status '+esc_h(list[0].name)+'</div>'+h);
-}
-async function stDelete(id){
-  if(!confirm('Hapus status ini?')) return;
-  try{ await api('/api/status/'+encodeURIComponent(id),{method:'DELETE'}); stClose(); await stLoad(); }
-  catch(e){ alert(e.message); }
-}
-async function stCompose(focusMusic){
-  stTrack=null;
-  if(stSearchOn===null){ try{ stSearchOn=!!(await api('/api/music/config')).search; }catch(e){ stSearchOn=false; } }
-  stModal(`<div style="font-weight:800;font-size:16px">Status baru</div>
-    <textarea id="st-text" maxlength="200" rows="3" placeholder="Lagi mikirin apa?" style="width:100%;margin-top:10px"></textarea>
-    <div style="font-size:12px;color:var(--ink-soft);margin:12px 0 4px">🎵 Lagu (opsional)</div>
-    <input type="text" id="st-q" placeholder="${stSearchOn?'Cari lagu atau tempel link Spotify':'Tempel link lagu Spotify'}" oninput="stQ()" style="width:100%">
-    <div id="st-res" style="margin-top:8px"></div>
-    <div id="st-pick" style="margin-top:8px;font-size:13px"></div>
-    <div class="err" id="st-err" style="display:none"></div>
-    <button class="btn" id="st-post" style="margin-top:12px" onclick="stPost()">Kirim Status</button>`);
-  setTimeout(()=>{ const e=document.getElementById(focusMusic?'st-q':'st-text'); if(e) e.focus(); },50);
-}
-let stQTimer=0;
-function stQ(){
-  clearTimeout(stQTimer);
-  const v=document.getElementById('st-q').value.trim(), res=document.getElementById('st-res');
-  const id=stSpId(v);
-  if(id){ stSetTrack({type:'track',id,title:'Lagu Spotify',artist:'',cover:''}); res.innerHTML=''; return; }
-  if(!stSearchOn||v.length<2){ res.innerHTML=''; return; }
-  stQTimer=setTimeout(async()=>{
-    try{
-      const d=await api('/api/music/search?q='+encodeURIComponent(v));
-      window._stRes=d.items||[];
-      res.innerHTML=window._stRes.map((t,i)=>`<button class="btn secondary" style="margin:0 0 6px;width:100%;text-align:left;display:flex;gap:10px;align-items:center" onclick="stPickRes(${i})">${t.cover?'<img src="'+esc_h(t.cover)+'" style="width:36px;height:36px;border-radius:6px">':''}<span style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc_h(t.title)}</b><small>${esc_h(t.artist)}</small></span></button>`).join('')||'<div class="note">Tidak ketemu.</div>';
-    }catch(e){ res.innerHTML='<div class="note">'+esc_h(e.message)+'</div>'; }
-  },400);
-}
-function stPickRes(i){ const t=(window._stRes||[])[i]; if(!t) return; stSetTrack(t); document.getElementById('st-res').innerHTML=''; }
-function stSetTrack(t){
-  stTrack=t;
-  document.getElementById('st-pick').innerHTML='✅ '+esc_h(t.title)+(t.artist?' — '+esc_h(t.artist):'')+' <button style="border:none;background:none;color:#D64545" onclick="stTrack=null;document.getElementById(\'st-pick\').innerHTML=\'\'">hapus</button>';
-}
-async function stPost(){
-  const text=document.getElementById('st-text').value.trim(), err=document.getElementById('st-err'), btn=document.getElementById('st-post');
-  err.style.display='none'; btn.disabled=true;
-  try{
-    await api('/api/status',{method:'POST',body:JSON.stringify({text,track:stTrack})});
-    stClose(); await stLoad();
-  }catch(e){ err.textContent=e.message; err.style.display='block'; btn.disabled=false; }
-}
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const account = getAccount();
+    const ok = account && account.email === email && account.passHash === simpleHash(pass);
+    if (!ok){
+      loginError.style.display = 'block';
+      return;
+    }
+    loginError.style.display = 'none';
+    setLoggedIn(true);
+    enterApp();
+  });
+
+  document.getElementById('reset-account-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    if (confirm('Hapus akun owner yang tersimpan di HP ini dan buat ulang?')){
+      clearAccount();
+      loginForm.reset();
+      showAuthScreen();
+    }
+  });
+
+  if (!storageAvailable){
+    const foot = document.querySelector('#signup-card .login-foot');
+    if (foot) foot.textContent = 'Penyimpanan lokal diblokir browser ini — sesi tidak akan diingat setelah apk ditutup.';
+  }
+
+  // ---------- 3D phone model ----------
+  let sceneReady = false;
+  function initScene(){
+    if (sceneReady) return;
+    if (typeof THREE === 'undefined'){
+      // Library 3D belum selesai dimuat (koneksi lambat) - coba lagi sebentar.
+      setTimeout(initScene, 200);
+      return;
+    }
+    sceneReady = true;
+  const wrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  camera.position.set(0, 0.3, 5.2);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  wrap.appendChild(renderer.domElement);
+
+  const key = new THREE.DirectionalLight(0xffffff, 1.1);
+  key.position.set(3, 4, 5);
+  scene.add(key);
+  scene.add(new THREE.AmbientLight(0x8899bb, 0.7));
+  const rim = new THREE.PointLight(0x3fe0c5, 1.2, 12);
+  rim.position.set(-3, 1, 3);
+  scene.add(rim);
+
+  const phoneGroup = new THREE.Group();
+
+  const bodyGeo = new THREE.BoxGeometry(1.6, 3.2, 0.18);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1c2740, roughness: 0.35, metalness: 0.4 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  phoneGroup.add(body);
+
+  const screenGeo = new THREE.PlaneGeometry(1.42, 3.0);
+  const screenMat = new THREE.MeshStandardMaterial({ color: 0x0e1526, roughness: 0.5, metalness: 0.1, emissive: 0x0b1a22, emissiveIntensity: 0.4 });
+  const screen = new THREE.Mesh(screenGeo, screenMat);
+  screen.position.z = 0.095;
+  phoneGroup.add(screen);
+
+  const lockRingGeo = new THREE.TorusGeometry(0.34, 0.045, 16, 48);
+  const lockMat = new THREE.MeshStandardMaterial({ color: 0xfb7a6b, roughness: 0.4, metalness: 0.3, emissive: 0xfb7a6b, emissiveIntensity: 0.3 });
+  const lockRing = new THREE.Mesh(lockRingGeo, lockMat);
+  lockRing.position.z = 0.13;
+  lockRing.visible = false;
+  phoneGroup.add(lockRing);
+
+  const shackleGeo = new THREE.TorusGeometry(0.18, 0.045, 16, 24, Math.PI);
+  const shackle = new THREE.Mesh(shackleGeo, lockMat);
+  shackle.position.set(0, 0.22, 0.13);
+  shackle.visible = false;
+  phoneGroup.add(shackle);
+
+  scene.add(phoneGroup);
+
+  let targetRotY = 0.5, currentRotY = 0.5;
+  let dragging = false, lastX = 0;
+  wrap.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; wrap.style.cursor = 'grabbing'; });
+  window.addEventListener('pointerup', () => { dragging = false; wrap.style.cursor = 'grab'; });
+  window.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    targetRotY += dx * 0.01;
+    lastX = e.clientX;
+  });
+
+  let locked = false;
+  const lockBtn = document.getElementById('lock-btn');
+  const lockValue = document.getElementById('lock-value');
+  lockBtn.addEventListener('click', () => {
+    locked = !locked;
+    lockRing.visible = locked;
+    shackle.visible = locked;
+    screenMat.emissive.set(locked ? 0x2a0f0c : 0x0b1a22);
+    lockBtn.textContent = locked ? 'Buka kunci HP' : 'Kunci HP sekarang';
+    lockBtn.classList.toggle('locked', locked);
+    lockValue.textContent = locked ? 'Terkunci' : 'Terbuka';
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    currentRotY += (targetRotY - currentRotY) * 0.08;
+    phoneGroup.rotation.y = currentRotY;
+    phoneGroup.rotation.x = Math.sin(Date.now() * 0.0006) * 0.05;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    if (!sceneReady) return;
+    camera.aspect = wrap.clientWidth / wrap.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  });
+  } // end initScene
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    setLoggedIn(false);
+    appContent.classList.remove('ready');
+    loginScreen.style.display = 'flex';
+    document.getElementById('login-pass').value = '';
+    showAuthScreen();
+  });
+
+  // ---------- toggle interactions ----------
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('on'));
+  });
+  document.querySelectorAll('.device-item').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.device-item').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+    });
+  });
 </script>
 </body>
 </html>
