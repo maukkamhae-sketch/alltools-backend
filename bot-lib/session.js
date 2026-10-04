@@ -45,11 +45,26 @@ async function connect(o) {
   const { state, saveCreds } = await useMultiFileAuthState(o.authDir);
   let version; try { version = (await fetchLatestBaileysVersion()).version; } catch (e) {}
   const logger = pino({ level: 'silent' });
+  // Simpan pesan yang baru dikirim supaya bisa dikirim ulang saat penerima gagal mendekripsi
+  // ("Menunggu pesan ini..."). Tanpa getMessage, permintaan retry dari WhatsApp tidak bisa dijawab.
+  const sentCache = new Map();
   const sock = makeWASocket({
     version, logger, printQRInTerminal: false, browser: Browsers.ubuntu('Chrome'),
     auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
     markOnlineOnConnect: false, syncFullHistory: false,
+    getMessage: async key => (key && sentCache.get(key.id)) || undefined,
   });
+  const rawSend = sock.sendMessage.bind(sock);
+  sock.sendMessage = async (jid, content, opts) => {
+    const r = await rawSend(jid, content, opts);
+    try {
+      if (r && r.key && r.key.id && r.message) {
+        sentCache.set(r.key.id, r.message);
+        if (sentCache.size > 500) sentCache.delete(sentCache.keys().next().value);
+      }
+    } catch (e) {}
+    return r;
+  };
   const ctx = o.makeRuntime(sock);
 
   sock.ev.on('creds.update', saveCreds);
