@@ -32,6 +32,7 @@ const { ROOT } = require('./bot-lib/util');
 const personal = require('./bot-lib/personal');
 const global = require('./bot-lib/global');
 const { registerRoutes } = require('./bot-lib/routes');
+const worker = require('./bot-lib/worker');
 
 function registerBotSender(app, opts) {
   shared.db = opts.db;
@@ -40,6 +41,8 @@ function registerBotSender(app, opts) {
   fs.mkdirSync(ROOT, { recursive: true });
 
   registerRoutes(app, opts);
+  worker.registerWorkerRoutes(app); // endpoint /w/* (aktif kalau WORKER_SECRET diisi)
+  worker.startSync();
 
   // Pulihkan sender yang sudah pernah terpasang setelah server restart.
   (async () => {

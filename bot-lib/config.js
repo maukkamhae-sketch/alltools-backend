@@ -13,6 +13,7 @@ function defaultConfig() {
     welcome: { text: 'Selamat datang @user di @group! 🎉 Baca deskripsi grup ya.' },
     catalog: { title: 'Katalog', items: [] },
     antilink: { kick: false },
+    sharePool: false, // izinkan nomor sender Personal ini dipakai Sender Global untuk Push Kontak (opt-in)
     faq: [],
     orderbot: { keywords: ['order', 'pesan', 'beli', 'mau beli'], reply: 'Terima kasih! Pesananmu sudah kami catat ✅ Admin akan segera menghubungi.' },
   };
@@ -43,6 +44,7 @@ function cleanConfig(input, old) {
       items: items.map(x => ({ name: clip(x && x.name, 80).trim(), price: clip(x && x.price, 30).trim(), desc: clip(x && x.desc, 200).trim() })).filter(x => x.name).slice(0, 60),
     };
   }
+  if (i.sharePool !== undefined) c.sharePool = !!i.sharePool;
   if (i.antilink) c.antilink = { kick: !!i.antilink.kick };
   if (Array.isArray(i.faq)) c.faq = i.faq.map(f => ({ q: clip(f && f.q, 120).trim(), a: clip(f && f.a, 800).trim() })).filter(f => f.q && f.a).slice(0, 60);
   if (i.orderbot) {

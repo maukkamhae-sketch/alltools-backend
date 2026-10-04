@@ -4,7 +4,7 @@
 const path = require('path');
 
 const ROOT = path.join(process.env.DATA_DIR || path.join(__dirname, '..'), 'bot-sessions');
-const MAX_SESSIONS = Number(process.env.BOT_MAX_SESSIONS) || 30;       // sender Personal aktif bersamaan
+const MAX_SESSIONS = Number(process.env.BOT_MAX_SESSIONS) || 20;       // sender Personal aktif bersamaan per server
 const AI_DAILY_CAP = Number(process.env.BOT_AI_DAILY_CAP) || 200;      // batas .ai per bot per hari
 const MAX_GLOBAL_CHATS = Number(process.env.BOT_MAX_GLOBAL_CHATS) || 5; // grup per bot Global
 const LINK_RE = /(https?:\/\/|www\.|chat\.whatsapp\.com\/)\S+/i;

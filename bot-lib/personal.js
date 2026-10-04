@@ -56,6 +56,15 @@ function phoneInUse(phone, exceptId) {
   for (const [id, rt] of runtimes) if (id !== exceptId && rt.meta && rt.meta.phone === phone) return true;
   return false;
 }
+/* Pool Sender Global: sender Personal yang sudah terverifikasi (connected), masa sewa aktif, dan owner-nya mengizinkan (config.sharePool). */
+function poolRuntimes() {
+  return [...runtimes.values()].filter(rt => rt && !rt.stopped && rt.status === 'connected' && rt.meta && rt.meta.config && rt.meta.config.sharePool === true && !isExpired(rt.meta));
+}
+/* Pilih satu nomor dari pool secara acak. `exceptDigits` = nomor yang tidak boleh dipakai (mis. target kirim). */
+function pickFromPool(exceptDigits) {
+  const list = poolRuntimes().filter(rt => digitsOf(rt.sock.user && rt.sock.user.id) !== exceptDigits);
+  return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+}
 const runtimeOf = id => runtimes.get(id);
 const activeCount = () => [...runtimes.values()].filter(rt => !rt.stopped).length;
 
@@ -66,7 +75,7 @@ async function restoreAll(skipIds) {
   for (const id of ids) {
     if (skipIds.includes(id)) continue;
     const meta = loadMeta(id);
-    if (!meta || meta.mode === 'global' || !meta.phone || isExpired(meta)) continue;
+    if (!meta || meta.mode === 'global' || !meta.phone || isExpired(meta) || meta.server >= 1) continue;
     if (!fs.existsSync(path.join(dirOf(id), 'auth', 'creds.json'))) continue;
     try { await start(meta); } catch (e) { console.error('[bot-sender] gagal pulihkan', id, e.message); }
     await sleep(1500);
@@ -93,4 +102,4 @@ async function deliverReminders(rt, meta) {
   }
 }
 
-module.exports = { start, stop, runtimeOf, publicState, phoneInUse, activeCount, restoreAll, tick, deliverReminders };
+module.exports = { start, stop, runtimeOf, poolRuntimes, pickFromPool, publicState, phoneInUse, activeCount, restoreAll, tick, deliverReminders };

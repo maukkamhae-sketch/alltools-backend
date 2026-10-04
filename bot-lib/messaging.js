@@ -60,7 +60,8 @@ function menuText(meta) {
     ['👑 *OWNER*', [
       [has('orderbot') && !isGlobal, `${p}pesanan`, 'daftar pesanan'],
       [has('broadcast') && !isGlobal, `${p}bc <teks>`, 'broadcast ke semua yang pernah chat'],
-      [has('pushkontak') && !isGlobal, `${p}pushkontak <teks>`, 'kirim pesan pribadi ke semua member grup (di grup)'],
+      [has('pushkontak'), `${p}pushkontak <teks>`, isGlobal ? 'kirim pesan pribadi ke semua member grup (dikirim dari nomor acak di pool)' : 'kirim pesan pribadi ke semua member grup (di grup)'],
+      [!isGlobal, `${p}pool on|off`, 'izinkan nomor bot ini dipakai Sender Global'],
       [isGlobal, '.lepas', 'lepas bot dari grup ini'],
     ]],
   ];

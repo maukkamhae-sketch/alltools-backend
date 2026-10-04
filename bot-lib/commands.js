@@ -165,7 +165,6 @@ const PUSH_DELAY = Number(process.env.BOT_PUSH_DELAY_MS) || 4000; // jeda dasar;
 async function pushKontak(c) {
   const { ctx, jid, p, rest } = c;
   if (!c.isOwner) return;
-  if (c.isGlobal) return c.reply('Push kontak hanya tersedia di Sender Personal (nomor WhatsApp sendiri).');
   if (!c.isGroup) return c.reply(`Perintah ini dipakai di dalam grup yang membernya mau dikirimi pesan.\nFormat: ${p}pushkontak isi pesan`);
   if ((c.parts[0] || '').toLowerCase() === 'stop') {
     if (!ctx.limits.pushing) return c.reply('Tidak ada push kontak yang sedang berjalan.');
@@ -173,6 +172,8 @@ async function pushKontak(c) {
     return c.reply('⏹️ Push kontak akan dihentikan setelah pesan yang sedang dikirim.');
   }
   if (!rest) return c.reply(`Format: ${p}pushkontak isi pesan\nHentikan: ${p}pushkontak stop`);
+  const personal = c.isGlobal ? require('./personal') : null; // lazy: hindari import melingkar
+  if (c.isGlobal && !personal.poolRuntimes().length) return c.reply('Push kontak belum bisa dipakai: belum ada nomor sender yang tersedia di pool. Coba lagi nanti.');
   if (ctx.limits.pushing) return c.reply('Push kontak sebelumnya masih berjalan.');
 
   let g;
@@ -186,12 +187,29 @@ async function pushKontak(c) {
   let ok = 0;
   try {
     for (const t of targets) {
-      try { await send(ctx, t, { text: clip(rest, 1500) }); ok++; } catch (e) {}
+      try {
+        // Global: tiap pesan dikirim dari nomor acak di pool (bukan dari nomor pusat, supaya nomor pusat aman)
+        const via = c.isGlobal ? personal.pickFromPool(t.split('@')[0]) : ctx;
+        if (!via) break; // pool habis di tengah jalan
+        await send(via, t, { text: clip(rest, 1500) }); ok++;
+      } catch (e) {}
       await sleep(PUSH_DELAY + Math.floor(Math.random() * PUSH_DELAY));
       if (isExpired(c.meta) || ctx.stopped || ctx.limits.pushStop) break;
     }
   } finally { ctx.limits.pushing = false; ctx.limits.pushStop = false; }
   return c.reply(`Push kontak selesai: ${ok}/${targets.length} terkirim.`);
+}
+
+/* .pool on|off — izinkan/cabut nomor Personal ini dipakai Sender Global (Push Kontak). Hanya owner, hanya Personal. */
+function pool(c) {
+  const { cfg, ctx, p, parts } = c;
+  if (!c.isOwner || c.isGlobal) return;
+  if (process.env.WORKER_SECRET && !process.env.WORKER_URLS) return c.reply('Pool Sender Global belum tersedia untuk sender di server ini.');
+  const a = (parts[0] || '').toLowerCase();
+  if (a === 'on' || a === 'off') { cfg.sharePool = a === 'on'; ctx.save(); }
+  return c.reply(cfg.sharePool
+    ? `🔄 Pool Sender Global: *AKTIF*. Nomor bot ini boleh dipakai acak untuk Push Kontak bot Global.\nMatikan: ${p}pool off`
+    : `🔄 Pool Sender Global: *MATI*. Nomor bot ini tidak dipakai bot lain.\nAktifkan: ${p}pool on`);
 }
 
 /* ---------- daftar perintah ---------- */
@@ -209,6 +227,7 @@ const COMMANDS = [
   { names: ['pesanan'], feature: 'orderbot', run: orders },
   { names: ['bc', 'broadcast'], feature: 'broadcast', run: broadcast },
   { names: ['pushkontak', 'push'], feature: 'pushkontak', run: pushKontak },
+  { names: ['pool'], run: pool },
 ];
 
 function findCommand(cmd, has) {

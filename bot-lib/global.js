@@ -194,7 +194,7 @@ function adminState() {
   const st = getState();
   return {
     status: runtime ? runtime.status : 'idle', phone: st.phone, code: runtime && runtime.status === 'pairing' ? runtime.code : '',
-    error: runtime ? runtime.err : '', chats: Object.keys(st.chats).length, owners: Object.keys(st.owners).length,
+    error: runtime ? runtime.err : '', chats: Object.keys(st.chats).length, owners: Object.keys(st.owners).length, pool: personal.poolRuntimes().length,
     schedule: shared.globalStatus(),
   };
 }

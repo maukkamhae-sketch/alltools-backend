@@ -430,7 +430,11 @@ function getDanaNumber() {
 }
 
 app.get('/api/bots/prices', (req, res) => {
-  res.json({ prices: getBotPrices(), globalPrices: getGlobalBotPrices(), globalNumber: getBotNumber(), globalStatus: globalBotStatus() });
+  let poolReady = 0;
+  try { poolReady = require('./bot-lib/personal').poolRuntimes().length; } catch (e) {}
+  let totalUsers = 0;
+  try { totalUsers = db.getAllUsers().length; } catch (e) {}
+  res.json({ prices: getBotPrices(), globalPrices: getGlobalBotPrices(), globalNumber: getBotNumber(), globalStatus: globalBotStatus(), poolReady, totalUsers });
 });
 
 app.get('/api/antimaling/price', (req, res) => {
@@ -560,7 +564,10 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     if (!botName) return res.status(400).json({ error: 'Nama bot wajib diisi.' });
     const feats = Array.isArray(features) ? [...new Set(features.filter(f => BOT_FEATURES.includes(f)))] : [];
     if (!feats.length) return res.status(400).json({ error: 'Pilih minimal 1 fitur.' });
-    if (mode === 'global' && feats.includes('pushkontak')) return res.status(400).json({ error: 'Push Kontak hanya tersedia di Sender Personal.' });
+    if (mode === 'global') {
+      const noGlobal = ['autoreply', 'faq', 'orderbot', 'broadcast'].filter(f => feats.includes(f));
+      if (noGlobal.length) return res.status(400).json({ error: 'Fitur ini tidak tersedia di Sender Global (butuh chat pribadi pelanggan): ' + noGlobal.join(', ') + '.' });
+    }
     const prices = mode === 'global' ? getGlobalBotPrices() : getBotPrices();
     const key = days === 1 ? 'day' : days === 7 ? 'week' : 'month';
     label = `Sewa Bot "${botName}" (${days} hari, Sender ${mode === 'global' ? 'Global' : 'Personal'})`;
