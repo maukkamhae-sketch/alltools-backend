@@ -146,7 +146,28 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-inbox" onclick="tab('inbox')">Inbox</button>
     <button id="t-bantuan" onclick="tab('bantuan')">Bantuan<span id="sp-dot" class="badge" style="background:var(--danger);margin-left:6px;display:none"></span></button>
     <button id="t-push" onclick="tab('push')">Notifikasi</button>
+    <button id="t-gs" onclick="tab('gs')">Sender Global</button>
   </div>
+
+  <section id="s-gs" class="hide">
+    <div class="card">
+      <b>Sender Global (nomor pusat)</b>
+      <div class="small" style="margin:4px 0 10px">Satu nomor WhatsApp yang melayani semua bot bermode Global. Pasang di sini, lalu masukkan kode pairing di WhatsApp nomor itu (Perangkat tertaut → Tautkan dengan nomor telepon).</div>
+      <div id="gs-info" class="small">Memuat...</div>
+      <div id="gs-form">
+        <label>Nomor WhatsApp pusat (format 62..., tanpa 0)</label>
+        <input type="text" id="gs-phone" inputmode="numeric" placeholder="6281234567890">
+        <button class="full" onclick="gsPair()">Minta kode pairing</button>
+      </div>
+      <div id="gs-code" class="hide" style="margin:12px 0;text-align:center">
+        <div class="small">Masukkan kode ini di WhatsApp nomor pusat:</div>
+        <div id="gs-code-val" style="font-size:30px;font-weight:800;letter-spacing:.18em;margin:8px 0"></div>
+      </div>
+      <button class="sec full" style="margin-top:8px" onclick="loadGs()">Muat ulang</button>
+      <button id="gs-stop" class="full hide" style="margin-top:8px;background:var(--danger);color:#fff" onclick="gsStop()">Lepas nomor pusat</button>
+      <div class="msg" id="gs-msg"></div>
+    </div>
+  </section>
 
   <section id="s-push" class="hide">
     <div class="card">
@@ -323,7 +344,7 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan','push']){
+  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan','push','gs']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
@@ -333,6 +354,42 @@ function tab(name){
   if(name==='bantuan') loadSupport();
   if(name==='inbox') loadInboxAdmin();
   if(name==='push') loadPushCount();
+  if(name==='gs') loadGs(); else gsStopPoll();
+}
+
+/* ---------- sender global (nomor pusat) ---------- */
+let gsTimer=null;
+function gsStopPoll(){ if(gsTimer){ clearInterval(gsTimer); gsTimer=null; } }
+function gsFmtNext(t){ try{ return new Date(t).toLocaleString('id-ID',{hour12:false}); }catch(e){ return ''; } }
+async function loadGs(){
+  try{
+    const d=await api('/api/admin/global-sender');
+    const st={connected:'Terhubung ✅',pairing:'Menunggu kode dimasukkan...',connecting:'Menyambung...',idle:'Belum dipasang',expired:'Kedaluwarsa'}[d.status]||d.status;
+    const sc=d.schedule||{};
+    let jadwal=sc.online?'Jadwal sekarang: ON':'Jadwal sekarang: OFF (istirahat)';
+    if(!sc.online&&sc.nextOnAt) jadwal+=' · ON lagi '+gsFmtNext(sc.nextOnAt);
+    $('gs-info').innerHTML='<b>Status:</b> '+esc(st)+(d.phone?' · nomor <b>'+esc(d.phone)+'</b>':'')+
+      '<br>Grup terpasang: '+(d.chats||0)+' · Owner terdaftar: '+(d.owners||0)+' · Sender Personal siap: '+(d.pool||0)+
+      '<br>'+esc(jadwal)+(d.error?'<br><span style="color:var(--danger)">'+esc(d.error)+'</span>':'');
+    const pairing=d.status==='pairing'&&d.code, conn=d.status==='connected';
+    $('gs-code').classList.toggle('hide',!pairing);
+    if(pairing) $('gs-code-val').textContent=d.code.length===8?d.code.slice(0,4)+'-'+d.code.slice(4):d.code;
+    $('gs-form').classList.toggle('hide',conn||pairing);
+    $('gs-stop').classList.toggle('hide',!(conn||pairing||d.phone));
+    if(pairing||d.status==='connecting'){ if(!gsTimer) gsTimer=setInterval(loadGs,3000); } else gsStopPoll();
+  }catch(e){ $('gs-info').textContent='Gagal memuat: '+e.message; gsStopPoll(); }
+}
+async function gsPair(){
+  const phone=$('gs-phone').value.replace(/\D/g,'');
+  if(phone.length<9){ say('gs-msg','Isi nomor dengan format 62..., tanpa 0.'); return; }
+  say('gs-msg','Meminta kode...',true);
+  try{ await api('/api/admin/global-sender/pair',{method:'POST',body:JSON.stringify({phone})}); $('gs-msg').className='msg'; await loadGs(); }
+  catch(e){ say('gs-msg',e.message); }
+}
+async function gsStop(){
+  if(!confirm('Lepas nomor pusat? Semua bot Global berhenti sampai nomor dipasang lagi.')) return;
+  try{ await api('/api/admin/global-sender/stop',{method:'POST',body:'{}'}); say('gs-msg','Nomor pusat dilepas.',true); setTimeout(loadGs,1800); }
+  catch(e){ say('gs-msg',e.message); }
 }
 
 /* ---------- notifikasi push ---------- */
