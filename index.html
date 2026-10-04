@@ -721,6 +721,36 @@ body.premium .status-card .sc-avatar{box-shadow:0 0 0 3px var(--pa),0 0 16px var
       <div id="bot-list"></div>
     </section>
 
+    <!-- MANAGE SENDER -->
+    <section id="page-sender" class="hidden">
+      <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 14px;margin-top:12px;position:relative">
+        <button class="back-btn" style="border:none;background:transparent;color:var(--accent);font-size:20px" onclick="showPage('bots')" aria-label="Kembali">&#8249;</button>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:19px;font-weight:800">Manage Sender</div>
+          <div id="sender-sub" style="font-size:13px;color:var(--ink-soft);margin-top:2px">Personal · pair &amp; QR</div>
+        </div>
+        <button class="back-btn" style="border:none;background:transparent;font-size:22px" onclick="botSenderMenu()" aria-label="Menu">&#9776;</button>
+        <div id="sender-menu" class="card hidden" style="position:absolute;right:10px;top:58px;z-index:5;padding:6px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.35)">
+          <button type="button" class="btn secondary" style="width:100%;margin:0 0 6px" onclick="botSenderMenu();botSenderReload()">Muat ulang status</button>
+          <button type="button" class="btn secondary" style="width:100%;margin:0" onclick="botSenderMenu();botToggleInfo(true)">Info Bot</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px"><div id="sender-box"></div></div>
+      <button type="button" class="card" id="infobot-btn" onclick="botToggleInfo()" style="width:100%;text-align:left;display:flex;align-items:center;gap:12px;margin-top:12px;cursor:pointer;color:var(--ink)">
+        <span style="font-size:22px">ℹ️</span>
+        <span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:15px">Info Bot</span><span style="display:block;font-size:12px;color:var(--ink-soft);margin-top:2px">Softban, device target, tips kirim</span></span>
+        <span id="infobot-arrow" style="font-size:20px;color:var(--ink-soft)">›</span>
+      </button>
+      <div id="infobot-panel" class="card hidden" style="margin-top:8px">
+        <div style="font-weight:800;font-size:13px">🛑 Softban</div>
+        <div class="note" style="margin:4px 0 10px">Softban = WhatsApp membatasi sementara kemampuan kirim nomor sender (bukan banned permanen). Tandanya: pesan ke kontak baru tertahan 1 centang, atau pesan ke grup tidak terkirim. Biasanya dipicu kirim banyak pesan identik dengan cepat, ke orang yang tidak menyimpan nomormu, atau nomor baru yang langsung dipakai massal. Kalau kena: istirahatkan nomor 24–72 jam, jangan kirim ulang atau pasang ulang berkali-kali.</div>
+        <div style="font-weight:800;font-size:13px">📱 Device target</div>
+        <div class="note" style="margin:4px 0 10px">Sender tertaut sebagai perangkat tertaut di WhatsApp. HP utama nomor itu harus tetap punya internet dan dibuka sesekali, karena WhatsApp melepas perangkat tertaut kalau HP utama tidak online sekitar 14 hari. Pakai WhatsApp versi terbaru, dan satu nomor hanya untuk satu bot. Tampilan pesan (format tebal/miring, media) bisa sedikit beda di versi lama atau beda OS penerima (Android/iPhone).</div>
+        <div style="font-weight:800;font-size:13px">📤 Tips kirim</div>
+        <div class="note" style="margin:4px 0 0">• Beri jeda antar pesan dan kirim bertahap, jangan sekaligus.<br>• Kirim ke kontak yang mengenalmu atau sudah setuju, dan beri cara untuk berhenti.<br>• Variasikan isi pesan, hindari link yang sama berulang-ulang.<br>• Nomor baru: pakai chat biasa 2–3 hari dulu sebelum dipakai bot.<br>• Jangan pasang nomor utama yang penting.<br>• Kalau banyak pesan tertunda, hentikan dulu dan tunggu.</div>
+      </div>
+    </section>
+
     <!-- ANTIMALING -->
     <section id="page-antimaling" class="hidden">
       <div class="page-head">
@@ -976,7 +1006,7 @@ body.premium .status-card .sc-avatar{box-shadow:0 0 0 3px var(--pa),0 0 16px var
 </div>
 
 <script>
-const ALL_PAGES=['home','downloader','ai','enhance','convert','publish','bots','antimaling','videoeditor','pulsa','hasil','premium','akun','chat','bantuan','shop'];
+const ALL_PAGES=['home','downloader','ai','enhance','convert','publish','bots','sender','antimaling','videoeditor','pulsa','hasil','premium','akun','chat','bantuan','shop'];
 function showPage(p){
   ALL_PAGES.forEach(id=>{
     document.getElementById('page-'+id).classList.toggle('hidden', id!==p);
@@ -1549,10 +1579,9 @@ async function renderBotList(){
         </div>
         <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Fitur: ${b.features.map(f=>BOT_FEATURE_LABELS[f]||f).join(', ')}</div>
         <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">Berlaku sampai: ${new Date(b.expiresAt).toLocaleDateString('id-ID')}</div>
-        ${b.status==='active'?`<div id="bs-${eh(b.id)}" style="margin-top:10px;"><div class="note">Memuat status sender...</div></div>`
+        ${b.status==='active'?`<button class="btn" style="margin-top:10px" onclick="botOpenSender('${eh(b.id)}')">⚙️ Kelola Sender</button>`
           :'<div class="note" style="margin-top:8px;">Masa sewa sudah habis. Sewa lagi untuk mengaktifkan kembali.</div>'}
       </div>`).join('');
-    bots.filter(b=>b.status==='active').forEach(b=>botSenderLoad(b.id));
   }catch(e){
     list.innerHTML='<div class="note">'+(e.message==='no-backend'?'Isi dulu alamat server di halaman Akun.':e.message)+'</div>';
   }
@@ -1561,6 +1590,20 @@ async function renderBotList(){
 /* ---------- Sender per bot + pengaturan ---------- */
 const botState={}; let botPoll=null;
 const botEh=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let botCurSender=null;
+function botOpenSender(id){
+  botCurSender=id;
+  const el=document.getElementById('sender-box');
+  el.innerHTML='<div id="bs-'+botEh(id)+'"><div class="note"><span class="spin"></span> Memuat status sender...</div></div>';
+  showPage('sender');
+  botSenderLoad(id);
+}
+function botSenderReload(){ if(botCurSender) botSenderLoad(botCurSender); }
+function botSenderMenu(){ const m=document.getElementById('sender-menu'); if(m) m.classList.toggle('hidden'); }
+function botSetSub(s){
+  const el=document.getElementById('sender-sub'); if(!el) return;
+  el.textContent=(s&&s.mode==='global')?'Global · PIN bot':'Personal · pair & QR';
+}
 async function botSenderLoad(id){
   const box=document.getElementById('bs-'+id); if(!box) return;
   try{ const s=await api('/api/bots/'+id+'/sender'); botState[id]=s; botSenderPaint(id,s); }
@@ -1570,11 +1613,19 @@ let botServers=null; const botPick={};
 async function botLoadServers(){ try{ botServers=(await api('/api/bots/servers')).servers||[]; }catch(e){ botServers=[]; } }
 function botServerChips(id){
   const pick=botPick[id]||'auto';
-  const chip=(key,top,sub,col,dis)=>'<button type="button" '+(dis?'disabled ':'')+'onclick="botPickServer(\''+id+'\',\''+key+'\')" style="flex:none;min-width:96px;padding:10px 8px;border-radius:14px;text-align:center;cursor:'+(dis?'not-allowed':'pointer')+';opacity:'+(dis?.6:1)+';color:var(--ink);background:'+(pick===key?'color-mix(in srgb,var(--amber) 20%,transparent)':'transparent')+';border:1.5px solid '+(pick===key?'var(--amber)':'var(--line)')+'"><div style="font-size:12px;font-weight:800;letter-spacing:.04em">'+top+'</div><div style="font-size:11px;font-weight:800;color:'+col+';margin-top:3px">'+sub+'</div></button>';
-  let h=chip('auto','⚡ AUTO','pilih otomatis','var(--amber)',false);
+  const SRV='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>';
+  const BOLT='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>';
+  const chip=(key,icon,top,sub,col,dis,tip)=>{
+    const on=pick===key;
+    return '<button type="button" '+(dis?'disabled ':'')+(tip?'title="'+botEh(tip)+'" ':'')+'onclick="botPickServer(\''+id+'\',\''+key+'\')" style="flex:none;width:98px;padding:12px 6px;border-radius:16px;text-align:center;cursor:'+(dis?'not-allowed':'pointer')+';opacity:'+(dis?.55:1)+';color:'+(on?'var(--amber)':'var(--ink-soft)')+';background:'+(on?'color-mix(in srgb,var(--amber) 22%,transparent)':'transparent')+';border:1.5px solid '+(on?'var(--amber)':'var(--line)')+'">'+
+      '<div style="height:22px;display:flex;align-items:center;justify-content:center">'+icon+'</div>'+
+      '<div style="font-size:13px;font-weight:800;letter-spacing:.04em;margin-top:6px;color:'+(on?'var(--amber)':'var(--ink)')+'">'+top+'</div>'+
+      '<div style="font-size:11px;font-weight:800;color:'+col+';margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+sub+'</div></button>';
+  };
+  let h=chip('auto',BOLT,'AUTO','TAP → SERVER TERBAIK','var(--amber)',false,'Pilih server otomatis (paling lowong)');
   (botServers||[]).forEach(s=>{
-    const st=s.status==='active'?['ACTIVE '+s.used+'/'+s.max,'#22A06B',false]:s.status==='full'?['PENUH '+s.used+'/'+s.max,'#E0483E',true]:['OFFLINE','#E0483E',true];
-    h+=chip(String(s.id),'SERVER '+s.id,st[0],st[1],st[2]);
+    const st=s.status==='active'?['ACTIVE','#22A06B',false]:s.status==='full'?['PENUH','#E0483E',true]:['OFFLINE','#E0483E',true];
+    h+=chip(String(s.id),SRV,'SERVER '+s.id,st[0],st[1],st[2],s.status==='offline'?'Server offline':'Terisi '+s.used+'/'+s.max);
   });
   return h;
 }
@@ -1586,11 +1637,13 @@ function botServerBlock(id){
     const pk=botPick[id]; if(pk&&pk!=='auto'){ const s=botServers.find(x=>String(x.id)===pk); if(!s||s.status!=='active') botPick[id]='auto'; }
     w.style.display='block'; el.innerHTML=botServerChips(id);
   });
-  return '<div id="bsw-'+id+'" style="display:none"><div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;display:flex;justify-content:space-between"><span>SERVER DEPLOY</span><span style="font-weight:500;letter-spacing:0">geser →</span></div>'+
+  return '<div id="bsw-'+id+'" style="display:none"><div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;display:flex;justify-content:space-between"><span>SERVER DEPLOY</span><span style="font-weight:700;letter-spacing:.02em;font-size:13px">👆 Geser</span></div>'+
     '<div id="bsv-'+id+'" style="display:flex;gap:8px;overflow-x:auto;padding:6px 0 10px"></div></div>';
 }
 function botSenderPaint(id,s){
   const box=document.getElementById('bs-'+id); if(!box) return;
+  if(!(s.status==='pairing'&&s.qr)) box.dataset.qr='';
+  botSetSub(s);
   if(s.status==='server_offline'){
     box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;border:1px solid #E0483E"><div style="font-size:15px;font-weight:800;color:#E0483E">SERVER '+botEh(s.server)+' OFFLINE</div>'+
       (s.phone?'<div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Sender +'+botEh(s.phone)+'</div>':'')+
@@ -1615,6 +1668,14 @@ function botSenderPaint(id,s){
       '<button class="btn" style="margin-top:8px" onclick="botOpenCfg(\''+id+'\')">⚙️ Atur Bot</button>'+
       '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Lepas Sender</button>'+
       '<div class="note" style="margin-top:6px">Di WhatsApp, ketik <b>'+botEh(s.config.prefix)+'menu</b> ke nomor sender untuk melihat perintah.</div>';
+  }else if(s.status==='pairing'&&s.qr){
+    if(box.dataset.qr===s.qr) return; // QR sama, jangan digambar ulang (hindari berkedip)
+    box.dataset.qr=s.qr;
+    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">Scan QR dengan WhatsApp sender</div><div id="qr-'+id+'" style="display:inline-block;background:#fff;padding:8px;border-radius:10px;min-width:180px;min-height:180px;line-height:0"></div></div>'+
+      '<div class="note" style="margin-top:8px">Buka WhatsApp di HP sender → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → arahkan kamera ke QR di atas. QR diperbarui otomatis, jangan ditutup sebelum selesai.</div>'+
+      '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Batal</button>';
+    botDrawQR(id,s.qr);
+    botStartPoll();
   }else if(s.status==='pairing'&&s.code){
     box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Kode pairing</div><div style="font-size:30px;font-weight:800;letter-spacing:5px;color:var(--accent);font-family:monospace;">'+botEh(s.code.replace(/(.{4})(?=.)/,'$1-'))+'</div></div>'+
       '<div class="note" style="margin-top:8px">Buka WhatsApp di HP sender → <b>Perangkat tertaut</b> → <b>Tautkan perangkat</b> → <b>Tautkan dengan nomor telepon</b> → masukkan kode di atas. Kode berlaku beberapa menit.</div>'+
@@ -1623,9 +1684,19 @@ function botSenderPaint(id,s){
   }else if(s.status==='connecting'){
     box.innerHTML='<div class="note"><span class="spin"></span> Menghubungkan sender...</div>'; botStartPoll();
   }else{
-    box.innerHTML=botServerBlock(id)+phoneRow+'<div class="err" id="be-'+id+'">'+botEh(s.error||'')+'</div>'+
-      '<button class="btn" style="margin-top:6px" onclick="botPair(\''+id+'\')">Pasang Sender</button>'+
-      '<div class="note" style="margin-top:6px">Masukkan nomor WhatsApp yang mau dijadikan bot (format 62..., tanpa 0). Kamu akan dapat kode pairing untuk ditautkan di WhatsApp.</div>';
+    const m=botMethod[id]||'code';
+    box.innerHTML='<div style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:.08em;color:#E0483E;background:color-mix(in srgb,#E0483E 14%,transparent);padding:5px 10px;border-radius:8px;margin-bottom:10px">NO SENDER</div>'+
+      botServerBlock(id)+
+      '<div id="bpw-'+id+'" style="display:'+(m==='qr'?'none':'block')+'">'+phoneRow+'</div>'+
+      '<div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;margin-top:12px">METODE TAUTAN</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 4px">'+
+        '<button type="button" id="bm-code-'+id+'" onclick="botSetMethod(\''+id+'\',\'code\')" style="padding:12px 6px;border-radius:12px;font-weight:800;font-size:12px;letter-spacing:.05em;cursor:pointer">🔢 PAIRING CODE</button>'+
+        '<button type="button" id="bm-qr-'+id+'" onclick="botSetMethod(\''+id+'\',\'qr\')" style="padding:12px 6px;border-radius:12px;font-weight:800;font-size:12px;letter-spacing:.05em;cursor:pointer">▦ QR CODE</button>'+
+      '</div>'+
+      '<div class="err" id="be-'+id+'">'+botEh(s.error||'')+'</div>'+
+      '<button class="btn" style="margin-top:6px" id="bgo-'+id+'" onclick="botPair(\''+id+'\')">🔗 START PAIRING</button>'+
+      '<div class="note" style="margin-top:6px" id="bmn-'+id+'"></div>';
+    botSetMethod(id,m);
   }
 }
 function botStartPoll(){
@@ -1637,13 +1708,56 @@ function botStartPoll(){
     if(!Object.values(botState).some(s=>s.status==='pairing'||s.status==='connecting')){ clearInterval(botPoll); botPoll=null; }
   },3000);
 }
+const botMethod={};
+function botSetMethod(id,m){
+  botMethod[id]=m;
+  const on='border:1.5px solid var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)';
+  const off='border:1.5px solid var(--line);color:var(--ink-soft);background:transparent';
+  const c=document.getElementById('bm-code-'+id), q=document.getElementById('bm-qr-'+id);
+  if(c) c.style.cssText+=';'+(m==='code'?on:off);
+  if(q) q.style.cssText+=';'+(m==='qr'?on:off);
+  const w=document.getElementById('bpw-'+id); if(w) w.style.display=m==='qr'?'none':'block';
+  const n=document.getElementById('bmn-'+id);
+  if(n) n.textContent=m==='qr'?'Tidak perlu isi nomor. Setelah START PAIRING, scan QR dari WhatsApp di HP sender.':'Masukkan nomor WhatsApp yang mau dijadikan bot (format 62..., tanpa 0). Kamu akan dapat kode pairing untuk ditautkan di WhatsApp.';
+}
+let botQRLib=null;
+function botLoadQRLib(){
+  if(window.qrcode) return Promise.resolve();
+  if(botQRLib) return botQRLib;
+  botQRLib=new Promise((res,rej)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+    sc.onload=()=>res(); sc.onerror=()=>{ botQRLib=null; rej(new Error('lib')); };
+    document.head.appendChild(sc);
+  });
+  return botQRLib;
+}
+async function botDrawQR(id,text){
+  const el=document.getElementById('qr-'+id); if(!el) return;
+  try{
+    await botLoadQRLib();
+    const q=window.qrcode(0,'M'); q.addData(text); q.make();
+    el.innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true});
+    const svg=el.querySelector('svg'); if(svg){ svg.style.width='200px'; svg.style.height='200px'; svg.style.display='block'; }
+  }catch(e){
+    el.style.lineHeight='1.4'; el.style.color='#111'; el.style.fontSize='12px'; el.style.padding='16px';
+    el.textContent='QR gagal ditampilkan (library tidak termuat). Cek koneksi lalu coba lagi.';
+  }
+}
+function botToggleInfo(forceOpen){
+  const p=document.getElementById('infobot-panel'), a=document.getElementById('infobot-arrow'); if(!p) return;
+  const open=forceOpen===true?(p.classList.remove('hidden'),true):p.classList.toggle('hidden')===false;
+  if(open) p.scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(a) a.textContent=open?'⌄':'›';
+}
 async function botPair(id){
-  const inp=document.getElementById('bp-'+id), er=document.getElementById('be-'+id);
-  const phone=(inp.value||'').replace(/\D/g,'');
+  const er=document.getElementById('be-'+id), m=botMethod[id]||'code';
+  const inp=document.getElementById('bp-'+id);
+  const phone=m==='code'?((inp&&inp.value)||'').replace(/\D/g,''):'';
   er.style.display='none';
-  if(phone.length<9){ er.textContent='Isi nomor WhatsApp dengan benar.'; er.style.display='block'; return; }
-  er.textContent='Meminta kode...'; er.style.display='block';
-  try{ const d=await api('/api/bots/'+id+'/sender/pair',{method:'POST',body:JSON.stringify({phone,server:botPick[id]||'auto'})}); botState[id]={status:'pairing',code:d.code,config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
+  if(m==='code'&&phone.length<9){ er.textContent='Isi nomor WhatsApp dengan benar.'; er.style.display='block'; return; }
+  er.textContent=m==='qr'?'Menyiapkan QR...':'Meminta kode...'; er.style.display='block';
+  try{ const d=await api('/api/bots/'+id+'/sender/pair',{method:'POST',body:JSON.stringify({method:m,phone,server:botPick[id]||'auto'})}); botState[id]={status:'pairing',code:d.code,qr:d.qr,config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
   catch(e){ er.textContent=e.message; er.style.display='block'; }
 }
 async function botStop(id){
