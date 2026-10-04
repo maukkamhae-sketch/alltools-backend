@@ -14,7 +14,7 @@ h1{font-size:20px;margin:4px 0 14px;display:flex;justify-content:space-between;a
 h1 span b{color:var(--accent);}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px;}
 label{display:block;font-size:12px;color:var(--soft);margin:10px 0 4px;}
-input[type=text],input[type=number],input[type=password],input[type=email],textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);}
+input[type=text],input[type=number],input[type=password],input[type=email],select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);}
 .row{display:flex;gap:10px;}
 .row>div{flex:1;}
 button{font-family:inherit;font-size:14px;font-weight:600;border:none;border-radius:10px;padding:11px 14px;cursor:pointer;background:var(--accent);color:var(--accent-ink);}
@@ -37,96 +37,10 @@ button:disabled{opacity:.5;}
 .hide{display:none;}
 .chk{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;}
 .chk input{width:auto;}
-
-
-/* ---------- banner video di atas halaman admin ---------- */
-.hero-banner{position:relative;border-radius:18px;overflow:hidden;margin:4px 0 14px;aspect-ratio:720/454;max-height:260px;background:#000;border:1px solid var(--line);}
-.hero-banner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
-.hero-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.35),transparent 45%);pointer-events:none;}
-body{padding-bottom:84px;}
-/* ---------- pemutar musik Owner ---------- */
-#mp{position:fixed;right:14px;bottom:14px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
-#mp-fab{width:52px;height:52px;border-radius:50%;padding:0;font-size:22px;box-shadow:0 6px 20px -6px var(--accent);}
-#mp-panel{width:min(92vw,340px);margin:0;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);}
-#mp-panel .ctl{display:flex;gap:8px;margin-top:10px;}
-#mp-panel .ctl button{flex:1;}
-#mp-panel input[type=range]{width:100%;}
-#mp-list .tr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;}
-#mp-list .tr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
-#mp-list .tr.on span{color:var(--accent);font-weight:700;}
-#mp-list .tr button{padding:4px 10px;}
-
-/* ---------- layar loading Owner (Sasuke + Rasengan) ---------- */
-#owner-splash{display:none;position:fixed;inset:0;z-index:100001;background:#05030d;color:#fff;overflow:hidden;transition:opacity .6s ease;animation:osAutoHide .6s ease 9s forwards;}
-html.owner-splash-on #owner-splash{display:block;}
-#owner-splash.out{opacity:0;pointer-events:none;}
-#owner-splash .os-bg{position:absolute;inset:-4%;background:url(/loading.webp) 47% 30%/cover no-repeat;animation:osKb 9s ease-out forwards;will-change:transform;}
-#owner-splash .os-glow{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;background:radial-gradient(70% 45% at 0% 30%,rgba(120,90,255,.55),transparent 70%);animation:osPulseA 2.4s ease-in-out infinite;}
-#owner-splash .os-glow.r{background:radial-gradient(70% 45% at 100% 32%,rgba(255,50,70,.5),transparent 70%);animation-name:osPulseB;}
-#owner-splash .os-shade{position:absolute;inset:0;background:linear-gradient(to top,#05030d 6%,rgba(5,3,13,.88) 22%,rgba(5,3,13,0) 52%),linear-gradient(to bottom,rgba(5,3,13,.55),transparent 22%);}
-#owner-splash canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-#owner-splash .os-ui{position:absolute;left:0;right:0;bottom:0;padding:0 28px calc(34px + env(safe-area-inset-bottom));}
-#owner-splash .os-wrap{max-width:420px;margin:0 auto;}
-#owner-splash .os-hello{font-size:12px;opacity:.8;letter-spacing:.04em;margin-bottom:8px;text-align:center;}
-#owner-splash .os-row{display:flex;justify-content:space-between;align-items:baseline;}
-#owner-splash .os-title{font-size:22px;font-weight:800;font-style:italic;letter-spacing:.06em;text-shadow:0 0 14px #8b6bff,0 0 30px #5b3df5;}
-#owner-splash .os-pct{font-size:13px;font-weight:700;opacity:.9;}
-#owner-splash .os-bar{height:12px;border-radius:999px;margin-top:10px;background:rgba(255,255,255,.12);border:1px solid rgba(160,140,255,.5);box-shadow:0 0 14px rgba(120,90,255,.5);overflow:hidden;}
-#owner-splash .os-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#6c4bff,#c9b8ff,#fff);box-shadow:0 0 12px #9b85ff;}
-#owner-splash .os-quote{margin-top:14px;font-size:13px;opacity:.88;line-height:1.5;text-align:center;}
-#owner-splash .os-quote i{display:block;opacity:.7;font-size:12px;margin-top:2px;}
-/* Rasengan (video, blend screen supaya latar hitamnya hilang) */
-.rasengan{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;transform-origin:50% 44%;transform:scale(var(--k,.6));transition:transform .2s linear;}
-.rasengan video{position:absolute;left:50%;top:44%;width:min(80vw,340px);transform:translate(-50%,-50%);-webkit-mask-image:radial-gradient(closest-side,#000 40%,transparent 100%);mask-image:radial-gradient(closest-side,#000 40%,transparent 100%);}
-.rasengan.burst{animation:rsBurst .5s ease-out forwards;}
-@keyframes rsBurst{from{opacity:1;}to{transform:scale(5.5);opacity:0;}}
-/* Rasengan di ujung jari pada banner atas (khusus Owner) */
-.hero-banner video.hero-ras{display:none;inset:auto;left:61.1%;top:-3.1%;height:109.7%;width:auto;aspect-ratio:9/16;mix-blend-mode:screen;pointer-events:none;-webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);}
-html.owner-splash-on .hero-banner video.hero-ras{display:block;}
-@keyframes osKb{from{transform:scale(1.05);}to{transform:scale(1.22) translate3d(-1.5%,-1%,0);}}
-@keyframes osPulseA{0%,100%{opacity:.25;}50%{opacity:.9;}}
-@keyframes osPulseB{0%,100%{opacity:.9;}50%{opacity:.25;}}
-@keyframes osAutoHide{to{opacity:0;visibility:hidden;pointer-events:none;}}
-@media (prefers-reduced-motion:reduce){#owner-splash .os-bg,#owner-splash .os-glow{animation:none!important;}}
-
-.sp-row{display:block;width:100%;text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;font-weight:500;}
-.sp-row b{font-weight:700;}
-.sp-last{font-size:12px;color:var(--soft);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-#sp-msgs{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;padding:6px 2px;margin-top:8px;}
-.sp-m{max-width:86%;padding:8px 11px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;align-self:flex-start;}
-.sp-m.admin{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-color:transparent;}
-.sp-m.bot{align-self:center;font-size:12px;color:var(--soft);border-style:dashed;background:transparent;}
-.sp-t{font-size:10px;opacity:.6;margin-top:3px;}
-.sp-bar{display:flex;gap:8px;margin-top:10px;}
-.sp-bar input{flex:1;}
 </style>
 </head>
 <body>
-<div id="owner-splash" role="status" aria-live="polite">
-  <div class="os-bg"></div>
-  <div class="os-glow"></div><div class="os-glow r"></div>
-  <div class="os-shade"></div>
-  <canvas id="os-cv"></canvas>
-  <div class="rasengan" id="os-ras"><video id="os-rasv" muted loop playsinline preload="auto"></video></div>
-  <div class="os-ui"><div class="os-wrap">
-    <div class="os-hello" id="os-hello">👑 Selamat datang, Owner</div>
-    <div class="os-row"><span class="os-title">LOADING...</span><span class="os-pct" id="os-pct">0%</span></div>
-    <div class="os-bar"><div class="os-fill" id="os-fill"></div></div>
-    <div class="os-quote">Jangan menyerah, bahkan jika dunia menentangmu.<i>- Uchiha Sasuke -</i></div>
-  </div></div>
-</div>
-<script>document.documentElement.classList.add('owner-splash-on');</script>
-
-
-
 <h1><span>All<b>Tools</b> Admin</span><button class="sec hide" id="logout" onclick="logout()">Keluar</button></h1>
-
-<div class="hero-banner">
-  <video id="hero-video" src="/banner.mp4" poster="/banner-poster.jpg" muted loop autoplay playsinline preload="metadata" disablepictureinpicture></video>
-  <video class="hero-ras" muted loop autoplay playsinline preload="auto"></video>
-  <div class="hero-shade"></div>
-</div>
-
 
 <div id="login" class="card">
   <b>Masuk sebagai Owner</b>
@@ -141,34 +55,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
     <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
     <button id="t-order" onclick="tab('order')">Pesanan</button>
-    <button id="t-debug" onclick="tab('debug')">Cek Device</button>
-    <button id="t-maint" onclick="tab('maint')">Maintenance</button>
-    <button id="t-inbox" onclick="tab('inbox')">Inbox</button>
-    <button id="t-bantuan" onclick="tab('bantuan')">Bantuan<span id="sp-dot" class="badge" style="background:var(--danger);margin-left:6px;display:none"></span></button>
-    <button id="t-push" onclick="tab('push')">Notifikasi</button>
   </div>
-
-  <section id="s-push" class="hide">
-    <div class="card">
-      <b>Kirim notifikasi promo/diskon</b>
-      <div class="small" style="margin:4px 0 10px">Terkirim ke semua pengguna yang sudah mengaktifkan notifikasi di app. Tidak bisa dibatalkan setelah dikirim.</div>
-      <label>Judul</label>
-      <input type="text" id="pu-title" maxlength="80" placeholder="Contoh: Diskon 12.12">
-      <label>Isi pesan</label>
-      <input type="text" id="pu-body" maxlength="200" placeholder="Contoh: Premium Pro diskon 50% hari ini saja!">
-      <label>Link tujuan saat diketuk (opsional, https://...)</label>
-      <input type="text" id="pu-url" placeholder="https://alltools-neon.vercel.app">
-      <button class="full" onclick="pushSend()">Kirim sekarang</button>
-      <div class="msg" id="pu-msg"></div>
-      <div class="small" id="pu-count" style="margin-top:10px"></div>
-    </div>
-  </section>
-
-  <section id="s-debug" class="hide">
-    <div class="small" style="margin-bottom:8px;">Semua device AntiMaling di server, apapun akunnya — buat mengecek kalau device tidak muncul di app.</div>
-    <button class="sec full" onclick="loadAmDebug()">Muat ulang</button>
-    <div id="am-debug-list"></div>
-  </section>
 
   <section id="s-produk">
     <div id="plist"></div>
@@ -187,23 +74,6 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       </div>
     </div>
     <div class="card">
-      <b>Harga sewa bot WhatsApp</b>
-      <div class="row">
-        <div><label>Per minggu / 7 hari (Rp)</label><input type="number" id="bp-week" inputmode="numeric"></div>
-        <div><label>Per bulan / 30 hari (Rp)</label><input type="number" id="bp-month" inputmode="numeric"></div>
-      </div>
-      <label>Nomor WhatsApp bot pusat (format 628xxx)</label>
-      <input type="text" id="bot-number" inputmode="numeric">
-    </div>
-    <div class="card">
-      <b>Harga proteksi AntiMaling</b>
-      <label>Sekali bayar per HP (Rp)</label>
-      <input type="number" id="am-price" inputmode="numeric">
-      <label>Link download apk AntiMaling (https://...)</label>
-      <input type="text" id="am-apk" inputmode="url" placeholder="https://github.com/.../releases/download/.../antimaling.apk">
-      <div class="small">Tombol "Download APK" muncul di app untuk pembeli yang pembayarannya sudah dikonfirmasi. Kosongkan untuk menghapus link.</div>
-    </div>
-    <div class="card">
       <b>Nomor DANA</b>
       <label>Nomor yang ditampilkan ke pembeli</label>
       <input type="text" id="dana" inputmode="numeric">
@@ -211,61 +81,6 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     </div>
     <button class="full" onclick="saveHarga()">Simpan</button>
     <div class="msg" id="h-msg"></div>
-  </section>
-
-  <section id="s-maint" class="hide">
-    <div class="card">
-      <b>Mode Maintenance</b>
-      <div class="small">Kalau aktif, user biasa melihat pesan di bawah dan tidak bisa memakai app. Akun Owner dan halaman admin ini tetap bisa dipakai.</div>
-      <div class="top" style="margin-top:12px;">
-        <span id="mt-status" class="badge" style="background:var(--ok)">Memuat...</span>
-      </div>
-      <label>Pesan untuk user</label>
-      <textarea id="mt-msg" rows="3" maxlength="300" placeholder="Contoh: Sedang maintenance, kembali lagi jam 20.00 ya."></textarea>
-      <label>Link saluran WhatsApp (opsional)</label>
-      <input type="text" id="mt-link" inputmode="url" placeholder="https://whatsapp.com/channel/xxxxxxxx">
-      <div class="small">Kalau diisi, muncul tombol "Join saluran WhatsApp" di layar maintenance.</div>
-      <button class="full danger" id="mt-btn-on" onclick="saveMaint(true)">Tutup app (aktifkan maintenance)</button>
-      <button class="full ok" id="mt-btn-off" onclick="saveMaint(false)">Buka app (matikan maintenance)</button>
-      <div class="msg" id="mt-note"></div>
-    </div>
-  </section>
-
-  <section id="s-inbox" class="hide">
-    <div class="card">
-      <b>Kirim pemberitahuan ke semua user</b>
-      <div class="small">Muncul di ikon lonceng 🔔 kanan atas app. User yang belum membaca melihat angka merah.</div>
-      <label>Judul</label>
-      <input type="text" id="ib-title" maxlength="80" placeholder="Contoh: Update fitur bot">
-      <label>Isi pesan</label>
-      <textarea id="ib-text" rows="4" maxlength="600" placeholder="Tulis pengumuman di sini..."></textarea>
-      <button class="full" id="ib-send" onclick="sendInbox()">Kirim</button>
-      <div class="msg" id="ib-note"></div>
-    </div>
-    <div id="ib-list"></div>
-  </section>
-
-  <section id="s-bantuan" class="hide">
-    <div id="sp-listview">
-      <div class="small" style="margin-bottom:8px;">Chat dari user lewat menu Customer Service. Yang berstatus LIVE sedang menunggu balasanmu.</div>
-      <button class="sec full" onclick="loadSupport()">Muat ulang</button>
-      <div id="sp-list"></div>
-      <div class="msg" id="sp-note"></div>
-    </div>
-    <div id="sp-chatview" class="hide">
-      <div class="top">
-        <button class="sec" onclick="closeSupportChat()">← Kembali</button>
-        <span id="sp-status" class="badge" style="background:var(--ok)"></span>
-      </div>
-      <div id="sp-who" class="small" style="margin-top:8px;"></div>
-      <div id="sp-msgs"></div>
-      <div class="sp-bar">
-        <input type="text" id="sp-input" maxlength="500" placeholder="Tulis balasan..." autocomplete="off" onkeydown="if(event.key==='Enter')replySupport()">
-        <button onclick="replySupport()" id="sp-send">Kirim</button>
-      </div>
-      <button class="danger full" onclick="closeSupportTicket()">Tutup chat ini</button>
-      <div class="msg" id="sp-err"></div>
-    </div>
   </section>
 
   <section id="s-order" class="hide">
@@ -310,11 +125,9 @@ async function start(){
   try{
     const c=await api('/api/admin/config');
     products=c.products;
-    $('pr-basic').value=c.planPrices.basic; $('pr-pro').value=c.planPrices.pro; $('bp-week').value=c.botPrices.week; $('bp-month').value=c.botPrices.month; $('bot-number').value=c.botNumber; $('am-price').value=c.amPrice; $('am-apk').value=c.amApkUrl||''; $('dana').value=c.dana;
+    $('pr-basic').value=c.planPrices.basic; $('pr-pro').value=c.planPrices.pro; $('dana').value=c.dana;
     $('login').classList.add('hide'); $('app').classList.remove('hide'); $('logout').classList.remove('hide');
     renderProducts();
-    mpInit();
-    loadSupport();
   }catch(e){
     if(e.status===401||e.status===403){ token=''; try{ localStorage.removeItem('admin_token'); }catch(x){} }
     $('login').classList.remove('hide'); $('app').classList.add('hide');
@@ -323,155 +136,11 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan','push']){
+  for(const t of ['produk','harga','order']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
   if(name==='order') loadOrders();
-  if(name==='debug') loadAmDebug();
-  if(name==='maint') loadMaint();
-  if(name==='bantuan') loadSupport();
-  if(name==='inbox') loadInboxAdmin();
-  if(name==='push') loadPushCount();
-}
-
-/* ---------- notifikasi push ---------- */
-async function loadPushCount(){
-  try{ const d=await api('/api/admin/push/count'); $('pu-count').textContent=d.count+' pengguna sudah mengaktifkan notifikasi.'; }
-  catch(e){ $('pu-count').textContent=''; }
-}
-async function pushSend(){
-  const title=$('pu-title').value.trim(), body=$('pu-body').value.trim(), url=$('pu-url').value.trim();
-  if(!title||!body){ say('pu-msg','Judul dan isi wajib diisi.'); return; }
-  if(!confirm('Kirim notifikasi ini ke semua pengguna sekarang?')) return;
-  try{
-    const d=await api('/api/admin/push/send',{method:'POST',body:JSON.stringify({title,body,url})});
-    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' pengguna.',true);
-    $('pu-title').value=''; $('pu-body').value=''; $('pu-url').value='';
-    loadPushCount();
-  }catch(e){ say('pu-msg',e.message); }
-}
-
-async function loadInboxAdmin(){
-  try{
-    const d=await api('/api/admin/inbox');
-    $('ib-list').innerHTML=d.items.map(i=>`<div class="card"><div class="top"><b>${esc(i.title)}</b><button onclick="delInbox(${i.id})" style="background:var(--danger);color:#fff;border:0;border-radius:8px;padding:6px 10px;">Hapus</button></div><div style="font-size:13px;margin-top:6px;white-space:pre-wrap;">${esc(i.text)}</div><div class="small">${spTime(i.ts)}</div></div>`).join('')||'<div class="small" style="margin-top:8px;">Belum ada pemberitahuan terkirim.</div>';
-  }catch(e){ say('ib-note','Gagal memuat: '+e.message); }
-}
-async function sendInbox(){
-  const title=$('ib-title').value.trim(), text=$('ib-text').value.trim();
-  if(!text){ say('ib-note','Isi pesan tidak boleh kosong.'); return; }
-  $('ib-send').disabled=true;
-  try{
-    await api('/api/admin/inbox',{method:'POST',body:JSON.stringify({title,text})});
-    $('ib-title').value=''; $('ib-text').value='';
-    say('ib-note','Terkirim ke semua user.',true);
-    loadInboxAdmin();
-  }catch(e){ say('ib-note',e.message); }
-  $('ib-send').disabled=false;
-}
-async function delInbox(id){
-  if(!confirm('Hapus pemberitahuan ini?')) return;
-  try{ await api('/api/admin/inbox/'+id,{method:'DELETE'}); loadInboxAdmin(); }catch(e){ say('ib-note',e.message); }
-}
-
-async function loadMaint(){
-  try{
-    const d=await api('/api/maintenance');
-    const st=$('mt-status');
-    st.textContent=d.on?'APP DITUTUP (maintenance aktif)':'APP TERBUKA';
-    st.style.background=d.on?'var(--danger)':'var(--ok)';
-    if(d.message) $('mt-msg').value=d.message;
-    if(d.link) $('mt-link').value=d.link;
-  }catch(e){ say('mt-note','Gagal memuat: '+e.message); }
-}
-async function saveMaint(on){
-  if(on && !confirm('Tutup app untuk semua user biasa?')) return;
-  try{
-    await api('/api/admin/maintenance',{method:'PUT',body:JSON.stringify({on:on,message:$('mt-msg').value.trim(),link:$('mt-link').value.trim()})});
-    say('mt-note',on?'App ditutup.':'App dibuka lagi.',true);
-    loadMaint();
-  }catch(e){ say('mt-note',e.message); }
-}
-
-let spUser=null, spLast=0;
-function spTime(ts){ try{ return new Date(ts).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}); }catch(e){ return ''; } }
-async function loadSupport(){
-  try{
-    const d=await api('/api/admin/support');
-    const dot=$('sp-dot');
-    const n=d.unreadCount||0; dot.textContent=n; dot.style.display=n?'inline-block':'none';
-    $('sp-list').innerHTML=d.tickets.map(t=>`<button class="sp-row" onclick="openSupportChat('${esc(t.userId)}')">
-        <div class="top"><b>${esc(t.name)}</b><span class="badge" style="background:${t.status==='live'?'var(--ok)':'var(--soft)'}">${t.status==='live'?'LIVE':'bot'}${t.unread?' · baru':''}</span></div>
-        <div class="small">${esc(t.email)} · ${esc(t.plan)} · ${spTime(t.updatedAt)}</div>
-        <div class="sp-last">${esc(t.last)}</div></button>`).join('')||'<div class="small" style="margin-top:8px;">Belum ada chat dari user.</div>';
-    $('sp-note').className='msg';
-  }catch(e){ say('sp-note','Gagal memuat: '+e.message); }
-}
-function renderSupportMsgs(list,reset){
-  const box=$('sp-msgs');
-  const near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
-  if(reset){ box.innerHTML=''; spLast=0; }
-  for(const m of list){
-    if(m.id<=spLast) continue; spLast=m.id;
-    const div=document.createElement('div');
-    div.className='sp-m '+m.from;
-    div.innerHTML=esc(m.text)+'<div class="sp-t">'+(m.from==='admin'?'Kamu':(m.from==='bot'?'Bot':'User'))+' · '+spTime(m.ts)+'</div>';
-    box.appendChild(div);
-  }
-  if(reset||near) box.scrollTop=box.scrollHeight;
-}
-async function openSupportChat(userId){
-  spUser=userId;
-  try{
-    const d=await api('/api/admin/support/'+encodeURIComponent(userId));
-    $('sp-listview').classList.add('hide'); $('sp-chatview').classList.remove('hide');
-    $('sp-who').textContent=d.name+' · '+d.email+' · paket '+d.plan;
-    const st=$('sp-status'); st.textContent=d.status==='live'?'LIVE':'bot'; st.style.background=d.status==='live'?'var(--ok)':'var(--soft)';
-    renderSupportMsgs(d.messages,true);
-    $('sp-err').className='msg';
-  }catch(e){ say('sp-note',e.message); }
-}
-function closeSupportChat(){ spUser=null; $('sp-chatview').classList.add('hide'); $('sp-listview').classList.remove('hide'); loadSupport(); }
-async function pollSupportChat(){
-  if(!spUser) return;
-  try{
-    const d=await api('/api/admin/support/'+encodeURIComponent(spUser)+'?after='+spLast);
-    renderSupportMsgs(d.messages,false);
-    const st=$('sp-status'); st.textContent=d.status==='live'?'LIVE':'bot'; st.style.background=d.status==='live'?'var(--ok)':'var(--soft)';
-  }catch(e){}
-}
-async function replySupport(){
-  const inp=$('sp-input'), text=inp.value.trim(); if(!text||!spUser) return;
-  $('sp-send').disabled=true;
-  try{
-    const d=await api('/api/admin/support/'+encodeURIComponent(spUser)+'/reply',{method:'POST',body:JSON.stringify({text})});
-    inp.value=''; renderSupportMsgs([d.message],false); $('sp-msgs').scrollTop=$('sp-msgs').scrollHeight;
-    $('sp-err').className='msg';
-  }catch(e){ say('sp-err',e.message); }
-  $('sp-send').disabled=false; inp.focus();
-}
-async function closeSupportTicket(){
-  if(!spUser||!confirm('Tutup chat ini? User akan kembali ke menu topik bot.')) return;
-  try{ await api('/api/admin/support/'+encodeURIComponent(spUser)+'/close',{method:'POST'}); await pollSupportChat(); }catch(e){ say('sp-err',e.message); }
-}
-setInterval(()=>{
-  if(document.hidden||$('app').classList.contains('hide')) return;
-  if(!$('s-bantuan').classList.contains('hide')){ if(spUser) pollSupportChat(); else loadSupport(); }
-},5000);
-
-async function loadAmDebug(){
-  const box=document.getElementById('am-debug-list');
-  box.innerHTML='<div class="small">Memuat...</div>';
-  try{
-    const d=await api('/api/admin/antimaling-devices');
-    box.innerHTML='<div class="small" style="margin:8px 0;">Total akun terdaftar: '+d.totalUsers+' · Total device: '+d.devices.length+'</div>'+
-      (d.devices.map(x=>`<div class="card">
-        <div class="top"><b>${esc(x.name)}</b><span class="badge" style="background:${x.paired?'var(--ok)':'var(--amber)'}">${x.paired?'Sudah pairing':'Kode: '+esc(x.pairCode)}</span></div>
-        <div class="small">${esc(x.userName)} (${esc(x.userEmail)})</div>
-        <div class="small">userId: ${esc(x.userId)} · deviceId: ${esc(x.id)}</div>
-      </div>`).join('') || '<div class="small">Belum ada device sama sekali di server.</div>');
-  }catch(e){ box.innerHTML='<div class="small">Gagal: '+esc(e.message)+'</div>'; }
 }
 
 /* ---------- produk ---------- */
@@ -514,7 +183,7 @@ async function saveProducts(){
 /* ---------- harga premium & dana ---------- */
 async function saveHarga(){
   try{
-    await api('/api/admin/config',{method:'PUT',body:JSON.stringify({planPrices:{basic:$('pr-basic').value,pro:$('pr-pro').value},botPrices:{week:$('bp-week').value,month:$('bp-month').value},botNumber:$('bot-number').value,amPrice:$('am-price').value,amApkUrl:$('am-apk').value,dana:$('dana').value})});
+    await api('/api/admin/config',{method:'PUT',body:JSON.stringify({planPrices:{basic:$('pr-basic').value,pro:$('pr-pro').value},dana:$('dana').value})});
     say('h-msg','Tersimpan. Langsung berlaku di app.',true);
   }catch(e){ say('h-msg',e.message); }
 }
@@ -527,7 +196,7 @@ async function loadOrders(){
     $('olist').innerHTML=d.orders.map(o=>{
       const st=ST[o.status]||[o.status,'var(--soft)'];
       const open=!['paid','failed'].includes(o.status);
-      const detail=o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):o.type==='antimaling'?('AntiMaling: '+esc(o.deviceLabel)):('Ke: '+esc(o.phoneNumber));
+      const detail=o.type==='premium'?('Paket: '+esc(o.plan)):('Ke: '+esc(o.phoneNumber));
       return `<div class="card">
         <div class="top"><b>${esc(o.productLabel)}</b><span class="badge" style="background:${st[1]}">${st[0]}</span></div>
         <div class="small">${detail} · ${rp(o.price)}</div>
@@ -547,125 +216,6 @@ async function settle(orderId,action){
 }
 
 if(token) start();
-</script>
-
-<div id="mp" class="hide">
-  <div id="mp-panel" class="card hide">
-    <div class="top"><b>🎵 Musik</b><button class="sec" onclick="mpToggle()">Tutup</button></div>
-    <div class="small" id="mp-now">Belum ada lagu. Tambah dari HP kamu.</div>
-    <div class="ctl">
-      <button class="sec" onclick="mpPlay(MP.i-1)">⏮</button>
-      <button id="mp-pp" onclick="mpPause()">▶</button>
-      <button class="sec" onclick="mpPlay(MP.i+1)">⏭</button>
-    </div>
-    <label>Volume</label>
-    <input type="range" id="mp-vol" min="0" max="1" step="0.05">
-    <label class="chk"><input type="checkbox" id="mp-auto"> Putar otomatis saat admin dibuka</label>
-    <div id="mp-list" style="margin-top:10px;"></div>
-    <button class="sec full" onclick="$('mp-file').click()">+ Tambah lagu dari HP</button>
-    <input type="file" id="mp-file" accept="audio/*,video/*" multiple class="hide">
-    <div class="small">Lagu disimpan di browser HP ini saja, tidak diunggah ke server.</div>
-  </div>
-  <button id="mp-fab" onclick="mpToggle()" aria-label="Musik">🎵</button>
-</div>
-<script>
-/* ---------- layar loading Owner: Sasuke + Rasengan ---------- */
-(function(){
-  const isOwner=document.documentElement.classList.contains('owner-splash-on');
-  const hr=document.querySelector('.hero-ras');
-  if(isOwner&&hr){ hr.src='/rasengan.mp4'; hr.play().catch(()=>{}); }
-  const sp=document.getElementById('owner-splash'); if(!sp) return;
-  if(!isOwner){ sp.remove(); return; }
-  const rv=document.getElementById('os-rasv'); if(rv){ rv.src='/rasengan.mp4'; rv.play().catch(()=>{}); }
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const fill=document.getElementById('os-fill'), pct=document.getElementById('os-pct'), cv=document.getElementById('os-cv'), ras=document.getElementById('os-ras');
-  
-  let stop=false, loaded=document.readyState==='complete', p=0;
-  if(!loaded) addEventListener('load', ()=>{ loaded=true; });
-  const MIN=reduce?900:2200, MAX=7000, t0=performance.now();
-  function hide(){ if(stop) return; stop=true; sp.classList.add('out'); setTimeout(()=>sp.remove(),700); }
-  setTimeout(hide, MAX+1500);
-  (function tick(now){
-    if(stop) return;
-    const el=now-t0, ready=(loaded&&el>=MIN)||el>=MAX;
-    const target=ready?100:Math.min(90,(el/MIN)*90);
-    p+=(target-p)*0.12; if(ready&&p>99.5) p=100;
-    fill.style.width=p+'%'; pct.textContent=Math.floor(p)+'%';
-    ras.style.setProperty('--k',(0.6+0.55*p/100).toFixed(3));
-    if(p>=100){ ras.classList.add('burst'); setTimeout(hide,450); return; }
-    requestAnimationFrame(tick);
-  })(t0);
-  if(reduce||!cv) return;
-  const ctx=cv.getContext('2d'), dpr=Math.min(devicePixelRatio||1,2);
-  const W=cv.width=innerWidth*dpr, H=cv.height=innerHeight*dpr;
-  const cols=['255,70,90','150,120,255','90,190,255'];
-  const mk=init=>({x:Math.random()*W,y:init?Math.random()*H:H+20,r:(1+Math.random()*2.4)*dpr,vy:-(.3+Math.random()*.9)*dpr,vx:(Math.random()-.5)*.4*dpr,a:.25+Math.random()*.55,c:cols[Math.random()*3|0]});
-  const ps=Array.from({length:34},()=>mk(true));
-  (function draw(){
-    if(stop) return;
-    ctx.clearRect(0,0,W,H); ctx.globalCompositeOperation='lighter';
-    for(const q of ps){
-      q.x+=q.vx+Math.sin(q.y/60)*.3*dpr; q.y+=q.vy;
-      if(q.y<-20) Object.assign(q,mk(false));
-      const g=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,q.r*4);
-      g.addColorStop(0,'rgba('+q.c+','+q.a+')'); g.addColorStop(1,'rgba('+q.c+',0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(q.x,q.y,q.r*4,0,6.283); ctx.fill();
-    }
-    requestAnimationFrame(draw);
-  })();
-})();
-</script>
-<script>
-/* ---------- pemutar musik Owner (lagu disimpan lokal di IndexedDB) ---------- */
-const MP={db:null,tracks:[],i:0,audio:new Audio(),url:null};
-function mpDb(){return new Promise((res,rej)=>{const r=indexedDB.open('admin-music',1);r.onupgradeneeded=()=>r.result.createObjectStore('t',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-function mpAll(){return new Promise(res=>{const q=MP.db.transaction('t').objectStore('t').getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>res([]);});}
-async function mpInit(){
-  if(MP.ready) return; MP.ready=true;
-  $('mp').classList.remove('hide');
-  try{ MP.db=await mpDb(); MP.tracks=await mpAll(); }catch(e){ $('mp-now').textContent='Penyimpanan browser tidak tersedia.'; return; }
-  let v=0.5, auto=true;
-  try{ v=Number(localStorage.getItem('mp_vol')??0.5); auto=localStorage.getItem('mp_auto')!=='0'; MP.i=Number(localStorage.getItem('mp_i')||0); }catch(e){}
-  MP.audio.volume=v; $('mp-vol').value=v; $('mp-auto').checked=auto;
-  $('mp-vol').oninput=e=>{ MP.audio.volume=+e.target.value; try{localStorage.setItem('mp_vol',e.target.value);}catch(x){} };
-  $('mp-auto').onchange=e=>{ try{localStorage.setItem('mp_auto',e.target.checked?'1':'0');}catch(x){} };
-  $('mp-file').onchange=e=>mpAdd([...e.target.files]).then(()=>{e.target.value='';});
-  MP.audio.onended=()=>mpPlay(MP.i+1);
-  MP.audio.onplay=()=>{$('mp-pp').textContent='⏸';}; MP.audio.onpause=()=>{$('mp-pp').textContent='▶';};
-  mpRender();
-  if(MP.tracks.length&&auto){
-    mpPlay(MP.i,true);
-    // browser bisa memblokir suara otomatis; kalau begitu mulai saat layar pertama kali disentuh
-    const kick=()=>{ if(MP.audio.paused&&MP.audio.src) MP.audio.play().catch(()=>{}); removeEventListener('pointerdown',kick); };
-    addEventListener('pointerdown',kick);
-  }
-}
-async function mpAdd(files){
-  for(const f of files){ await new Promise(res=>{const tx=MP.db.transaction('t','readwrite');tx.objectStore('t').add({name:f.name.replace(/\.[^.]+$/,''),blob:f});tx.oncomplete=res;tx.onerror=res;}); }
-  const had=MP.tracks.length; MP.tracks=await mpAll(); mpRender();
-  if(!had&&MP.tracks.length) mpPlay(0);
-}
-function mpDel(id){
-  const tx=MP.db.transaction('t','readwrite'); tx.objectStore('t').delete(id);
-  tx.oncomplete=async()=>{ const cur=MP.tracks[MP.i]; MP.tracks=await mpAll();
-    if(cur&&cur.id===id){ MP.audio.pause(); MP.audio.removeAttribute('src'); MP.i=0; }
-    mpRender(); };
-}
-function mpPlay(i,quiet){
-  if(!MP.tracks.length) return;
-  MP.i=(i+MP.tracks.length)%MP.tracks.length;
-  try{localStorage.setItem('mp_i',MP.i);}catch(e){}
-  if(MP.url) URL.revokeObjectURL(MP.url);
-  MP.url=URL.createObjectURL(MP.tracks[MP.i].blob); MP.audio.src=MP.url;
-  MP.audio.play().catch(()=>{}); mpRender();
-}
-function mpPause(){ if(!MP.audio.src){ mpPlay(MP.i); return; } MP.audio.paused?MP.audio.play().catch(()=>{}):MP.audio.pause(); }
-function mpToggle(){ $('mp-panel').classList.toggle('hide'); }
-function mpRender(){
-  const t=MP.tracks[MP.i];
-  $('mp-now').textContent=t?('Memutar: '+t.name):'Belum ada lagu. Tambah dari HP kamu.';
-  $('mp-list').innerHTML=MP.tracks.map((x,k)=>'<div class="tr'+(k===MP.i?' on':'')+'"><span onclick="mpPlay('+k+')">'+esc(x.name)+'</span><button class="danger" onclick="mpDel('+x.id+')">Hapus</button></div>').join('');
-}
 </script>
 </body>
 </html>
