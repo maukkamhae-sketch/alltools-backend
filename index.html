@@ -1566,8 +1566,38 @@ async function botSenderLoad(id){
   try{ const s=await api('/api/bots/'+id+'/sender'); botState[id]=s; botSenderPaint(id,s); }
   catch(e){ box.innerHTML='<div class="note">'+botEh(e.message)+'</div>'; }
 }
+let botServers=null; const botPick={};
+async function botLoadServers(){ try{ botServers=(await api('/api/bots/servers')).servers||[]; }catch(e){ botServers=[]; } }
+function botServerChips(id){
+  const pick=botPick[id]||'auto';
+  const chip=(key,top,sub,col,dis)=>'<button type="button" '+(dis?'disabled ':'')+'onclick="botPickServer(\''+id+'\',\''+key+'\')" style="flex:none;min-width:96px;padding:10px 8px;border-radius:14px;text-align:center;cursor:'+(dis?'not-allowed':'pointer')+';opacity:'+(dis?.6:1)+';color:var(--ink);background:'+(pick===key?'color-mix(in srgb,var(--amber) 20%,transparent)':'transparent')+';border:1.5px solid '+(pick===key?'var(--amber)':'var(--line)')+'"><div style="font-size:12px;font-weight:800;letter-spacing:.04em">'+top+'</div><div style="font-size:11px;font-weight:800;color:'+col+';margin-top:3px">'+sub+'</div></button>';
+  let h=chip('auto','⚡ AUTO','pilih otomatis','var(--amber)',false);
+  (botServers||[]).forEach(s=>{
+    const st=s.status==='active'?['ACTIVE '+s.used+'/'+s.max,'#22A06B',false]:s.status==='full'?['PENUH '+s.used+'/'+s.max,'#E0483E',true]:['OFFLINE','#E0483E',true];
+    h+=chip(String(s.id),'SERVER '+s.id,st[0],st[1],st[2]);
+  });
+  return h;
+}
+function botPickServer(id,key){ botPick[id]=key; const el=document.getElementById('bsv-'+id); if(el) el.innerHTML=botServerChips(id); }
+function botServerBlock(id){
+  botLoadServers().then(()=>{
+    const w=document.getElementById('bsw-'+id), el=document.getElementById('bsv-'+id); if(!w||!el) return;
+    if(!botServers||!botServers.length){ w.style.display='none'; return; }
+    const pk=botPick[id]; if(pk&&pk!=='auto'){ const s=botServers.find(x=>String(x.id)===pk); if(!s||s.status!=='active') botPick[id]='auto'; }
+    w.style.display='block'; el.innerHTML=botServerChips(id);
+  });
+  return '<div id="bsw-'+id+'" style="display:none"><div class="field-label" style="letter-spacing:.12em;font-size:11px;font-weight:700;display:flex;justify-content:space-between"><span>SERVER DEPLOY</span><span style="font-weight:500;letter-spacing:0">geser →</span></div>'+
+    '<div id="bsv-'+id+'" style="display:flex;gap:8px;overflow-x:auto;padding:6px 0 10px"></div></div>';
+}
 function botSenderPaint(id,s){
   const box=document.getElementById('bs-'+id); if(!box) return;
+  if(s.status==='server_offline'){
+    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:14px;text-align:center;border:1px solid #E0483E"><div style="font-size:15px;font-weight:800;color:#E0483E">SERVER '+botEh(s.server)+' OFFLINE</div>'+
+      (s.phone?'<div style="font-size:12px;color:var(--ink-soft);margin-top:4px">Sender +'+botEh(s.phone)+'</div>':'')+
+      '<div style="font-size:12px;color:var(--ink-soft);margin-top:6px">'+botEh(s.error||'')+'</div></div>'+
+      '<button class="btn secondary" style="margin-top:8px" onclick="botSenderLoad(\''+id+'\')">Muat ulang</button>';
+    return;
+  }
   if(s.mode==='global'){
     const g=s.schedule||{}, on=!!g.online, wins=(g.windows||[]).map(w=>w.join(' - ')).join(', ');
     box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender Global · PIN bot</div>'+
@@ -1580,7 +1610,7 @@ function botSenderPaint(id,s){
   }
   const phoneRow='<input type="text" inputmode="numeric" id="bp-'+id+'" placeholder="Nomor WA sender, contoh 6281234567890">';
   if(s.status==='connected'){
-    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender terhubung</div><div style="font-size:18px;font-weight:700;color:var(--accent);">+'+botEh(s.phone)+'</div>'+
+    box.innerHTML='<div style="background:var(--bg);border-radius:12px;padding:12px;text-align:center;"><div style="font-size:11px;color:var(--ink-soft);">Sender terhubung'+(s.server>=1?' · Server '+botEh(s.server):'')+'</div><div style="font-size:18px;font-weight:700;color:var(--accent);">+'+botEh(s.phone)+'</div>'+
       '<div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Pesanan: '+s.stats.orders+' · Kontak: '+s.stats.contacts+' · Pengingat: '+s.stats.reminders+'</div></div>'+
       '<button class="btn" style="margin-top:8px" onclick="botOpenCfg(\''+id+'\')">⚙️ Atur Bot</button>'+
       '<button class="btn secondary" style="margin-top:6px" onclick="botStop(\''+id+'\')">Lepas Sender</button>'+
@@ -1593,7 +1623,7 @@ function botSenderPaint(id,s){
   }else if(s.status==='connecting'){
     box.innerHTML='<div class="note"><span class="spin"></span> Menghubungkan sender...</div>'; botStartPoll();
   }else{
-    box.innerHTML=phoneRow+'<div class="err" id="be-'+id+'">'+botEh(s.error||'')+'</div>'+
+    box.innerHTML=botServerBlock(id)+phoneRow+'<div class="err" id="be-'+id+'">'+botEh(s.error||'')+'</div>'+
       '<button class="btn" style="margin-top:6px" onclick="botPair(\''+id+'\')">Pasang Sender</button>'+
       '<div class="note" style="margin-top:6px">Masukkan nomor WhatsApp yang mau dijadikan bot (format 62..., tanpa 0). Kamu akan dapat kode pairing untuk ditautkan di WhatsApp.</div>';
   }
@@ -1613,7 +1643,7 @@ async function botPair(id){
   er.style.display='none';
   if(phone.length<9){ er.textContent='Isi nomor WhatsApp dengan benar.'; er.style.display='block'; return; }
   er.textContent='Meminta kode...'; er.style.display='block';
-  try{ const d=await api('/api/bots/'+id+'/sender/pair',{method:'POST',body:JSON.stringify({phone})}); botState[id]={status:'pairing',code:d.code,config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
+  try{ const d=await api('/api/bots/'+id+'/sender/pair',{method:'POST',body:JSON.stringify({phone,server:botPick[id]||'auto'})}); botState[id]={status:'pairing',code:d.code,config:{prefix:'.'},stats:{}}; botSenderPaint(id,botState[id]); }
   catch(e){ er.textContent=e.message; er.style.display='block'; }
 }
 async function botStop(id){
@@ -1639,7 +1669,7 @@ function botOpenCfg(id){
     sec('orderbot','Deteksi pesanan','Kata pemicu dipisah koma',  '<input type="text" id="bc-ok" value="'+botEh((c.orderbot.keywords||[]).join(', '))+'"><div style="height:6px"></div>'+ta('bc-or',c.orderbot.reply||'','Balasan setelah pesanan dicatat'))+
     sec('antilink','Anti-link','', '<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="bc-kick" style="width:auto" '+(c.antilink.kick?'checked':'')+'> Keluarkan member setelah 3x kirim link (bot harus admin grup)</label>')+
     sec('ai','Kepribadian AI','Contoh: Kamu CS Toko Baju Rina, ramah, jawab singkat.',ta('bc-ai',c.aiPrompt||'',''))+
-    (s.mode==='personal'?'<label class="field-label" style="margin-top:12px"><b>Pool Sender Global</b></label><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><input type="checkbox" id="bc-pool" style="width:auto;margin-top:3px" '+(c.sharePool?'checked':'')+'> <span>Izinkan nomor sender ini dipakai acak oleh bot Sender Global untuk Push Kontak. Pesan akan keluar dari nomor WhatsApp-mu, dan kalau nomor kena banned, risikonya ke nomormu. Bisa dimatikan kapan saja.</span></label>':'')+
+    (s.mode==='personal'&&!(s.server>=1)?'<label class="field-label" style="margin-top:12px"><b>Pool Sender Global</b></label><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px"><input type="checkbox" id="bc-pool" style="width:auto;margin-top:3px" '+(c.sharePool?'checked':'')+'> <span>Izinkan nomor sender ini dipakai acak oleh bot Sender Global untuk Push Kontak. Pesan akan keluar dari nomor WhatsApp-mu, dan kalau nomor kena banned, risikonya ke nomormu. Bisa dimatikan kapan saja.</span></label>':'')+
     '<div class="err" id="bc-err"></div><button class="btn" style="margin-top:12px" onclick="botSaveCfg(\''+id+'\')">Simpan</button>'+
     '<button class="btn secondary" style="margin-top:6px" onclick="botCloseCfg()">Tutup</button>';
   document.getElementById('bot-sheet').classList.remove('hidden');
