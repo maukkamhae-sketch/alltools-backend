@@ -3,8 +3,8 @@
  *
  * Pemilik bot (login):
  *   GET  /api/bots/:id/sender        status sender + config (Personal atau Global)
- *   GET  /api/bots/servers           daftar Server 1-5 + status (active/full/offline)
- *   POST /api/bots/:id/sender/pair   {method:'code'|'qr', phone (wajib utk code), server:'auto'|1..5} -> {code} atau {qr}   (Personal saja)
+ *   GET  /api/bots/servers           daftar Server 1-5 + status (active/full/offline), plus main = Server Utama
+ *   POST /api/bots/:id/sender/pair   {method:'code'|'qr', phone (wajib utk code), server:'auto'|'main'|1..5, pool:true|false (ikut Pool Sender Global, hanya Server Utama)} -> {code} atau {qr}   (Personal saja)
  *   POST /api/bots/:id/sender/stop   lepas sender        (Personal saja)
  *   PUT  /api/bots/:id/config        simpan pengaturan fitur
  * Owner aplikasi:
@@ -32,7 +32,8 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
 
   /* Server 1-5 (kalau WORKER_URLS diisi): daftar + status active / full / offline untuk layar pasang sender. */
   app.get('/api/bots/servers', requireAuth, async (req, res) => {
-    try { res.json({ servers: await worker.serverList() }); } catch (e) { res.json({ servers: [] }); }
+    const main = { status: personal.activeCount() < MAX_SESSIONS ? 'active' : 'full', used: personal.activeCount(), max: MAX_SESSIONS };
+    try { res.json({ servers: await worker.serverList(), main }); } catch (e) { res.json({ servers: [], main }); }
   });
 
   /* Status sender yang dipasang di server sender (1-5). Kalau servernya mati, balas status server_offline. */
@@ -79,8 +80,14 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
     } else if (cur && cur.status === 'connected') return res.status(400).json({ error: 'Sender sudah terhubung. Lepas dulu kalau mau ganti nomor.' });
 
     let target;
-    try { target = await worker.chooseTarget(req.body && req.body.server, !!cur || personal.activeCount() < MAX_SESSIONS); }
-    catch (e) { return res.status(e.status || 500).json({ error: e.message }); }
+    const poolOpt = req.body && typeof req.body.pool === 'boolean' ? req.body.pool : null; // ikut Pool Sender Global (hanya Server Utama)
+    if (req.body && String(req.body.server) === 'main') { // paksa Server Utama (dibutuhkan untuk Pool Sender Global)
+      if (!cur && personal.activeCount() >= MAX_SESSIONS) return res.status(409).json({ error: `Server Utama penuh (${personal.activeCount()}/${MAX_SESSIONS}). Matikan opsi Pool atau pilih server lain.` });
+      target = { local: true };
+    } else {
+      try { target = await worker.chooseTarget(req.body && req.body.server, !!cur || personal.activeCount() < MAX_SESSIONS); }
+      catch (e) { return res.status(e.status || 500).json({ error: e.message }); }
+    }
 
     try {
       if (oldN && oldN !== target.n) { // pindah server: bersihkan sesi di server lama
@@ -92,6 +99,7 @@ function registerRoutes(app, { db, requireAuth, requireOwner }) {
         meta.server = target.n; writeMeta(meta);
         return res.json({ code: d.code, qr: d.qr, server: target.n });
       }
+      if (poolOpt !== null) meta.config = { ...meta.config, sharePool: poolOpt };
       meta.server = 0; writeMeta(meta);
       fs.rmSync(path.join(dirOf(bot.id), 'auth'), { recursive: true, force: true }); // mulai sesi bersih untuk pairing baru
       const ctx = await personal.start(meta, method === 'qr' ? undefined : phone, method === 'qr' ? 4 : undefined);
