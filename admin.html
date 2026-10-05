@@ -154,7 +154,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
   <section id="s-redeem" class="hide">
     <div class="card">
       <b>Kode Redeem</b>
-      <div class="small" style="margin:4px 0 10px">Buat dan atur kode redeem di sini. <a href="/redeem-admin.html" target="_blank" rel="noopener" style="color:var(--accent)">Buka layar penuh</a></div>
+      <div class="small" style="margin:4px 0 10px">Buat dan atur kode redeem di sini. <a href="/admin/redeem" target="_blank" rel="noopener" style="color:var(--accent)">Buka layar penuh</a></div>
       <iframe id="rd-frame" title="Kode Redeem" loading="lazy"></iframe>
     </div>
   </section>
@@ -368,7 +368,7 @@ function tab(name){
   if(name==='gs') loadGs(); else gsStopPoll();
 }
 
-function loadRedeemFrame(){ const f=$('rd-frame'); if(f&&!f.getAttribute('src')) f.setAttribute('src','/redeem-admin.html'); }
+function loadRedeemFrame(){ const f=$('rd-frame'); if(f&&!f.getAttribute('src')) f.setAttribute('src','/admin/redeem'); }
 
 /* ---------- sender global (nomor pusat) ---------- */
 let gsTimer=null;
