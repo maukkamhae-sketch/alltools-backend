@@ -99,6 +99,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
 .sp-t{font-size:10px;opacity:.6;margin-top:3px;}
 .sp-bar{display:flex;gap:8px;margin-top:10px;}
 .sp-bar input{flex:1;}
+#rd-frame{width:100%;height:78vh;border:1px solid var(--line);border-radius:14px;background:var(--card);}
 </style>
 </head>
 <body>
@@ -141,6 +142,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
     <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
     <button id="t-order" onclick="tab('order')">Pesanan</button>
+    <button id="t-redeem" onclick="tab('redeem')">Redeem</button>
     <button id="t-debug" onclick="tab('debug')">Cek Device</button>
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
     <button id="t-inbox" onclick="tab('inbox')">Inbox</button>
@@ -148,6 +150,14 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-push" onclick="tab('push')">Notifikasi</button>
     <button id="t-gs" onclick="tab('gs')">Sender Global</button>
   </div>
+
+  <section id="s-redeem" class="hide">
+    <div class="card">
+      <b>Kode Redeem</b>
+      <div class="small" style="margin:4px 0 10px">Buat dan atur kode redeem di sini. <a href="/redeem-admin.html" target="_blank" rel="noopener" style="color:var(--accent)">Buka layar penuh</a></div>
+      <iframe id="rd-frame" title="Kode Redeem" loading="lazy"></iframe>
+    </div>
+  </section>
 
   <section id="s-gs" class="hide">
     <div class="card">
@@ -344,11 +354,12 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','debug','maint','inbox','bantuan','push','gs']){
+  for(const t of ['produk','harga','order','redeem','debug','maint','inbox','bantuan','push','gs']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
   if(name==='order') loadOrders();
+  if(name==='redeem') loadRedeemFrame();
   if(name==='debug') loadAmDebug();
   if(name==='maint') loadMaint();
   if(name==='bantuan') loadSupport();
@@ -356,6 +367,8 @@ function tab(name){
   if(name==='push') loadPushCount();
   if(name==='gs') loadGs(); else gsStopPoll();
 }
+
+function loadRedeemFrame(){ const f=$('rd-frame'); if(f&&!f.getAttribute('src')) f.setAttribute('src','/redeem-admin.html'); }
 
 /* ---------- sender global (nomor pusat) ---------- */
 let gsTimer=null;
