@@ -935,6 +935,39 @@ app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
   res.json({ totalUsers: users.length, devices });
 });
 
+// Daftar semua user (tab "Data User"). Tanpa passwordHash. Dipakai untuk melihat, mencari, dan menyaring akun.
+app.get('/api/admin/users', requireOwner, (req, res) => {
+  const all = db.getAllUsers();
+  const q = String(req.query.q || '').trim().toLowerCase();
+  const plan = String(req.query.plan || '').trim().toLowerCase();
+  const titled = String(req.query.titled || '') === '1';
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+  const counts = { free: 0, basic: 0, pro: 0, owner: 0, titled: 0 };
+  for (const u of all) {
+    if (counts[u.plan] !== undefined) counts[u.plan]++;
+    if (u.roleBadge) counts.titled++;
+  }
+
+  const rows = all.filter(u => {
+    if (plan && u.plan !== plan) return false;
+    if (titled && !u.roleBadge) return false;
+    if (q) {
+      const hay = ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.id || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  rows.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const total = rows.length;
+  const users = rows.slice(offset, offset + limit).map(u => ({
+    id: u.id, name: u.name || '', email: u.email || '', plan: u.plan || 'free',
+    roleBadge: u.roleBadge || '', balance: Number(u.balance) || 0, createdAt: u.createdAt || '',
+  }));
+  res.json({ total, totalAll: all.length, counts, users, offset, limit });
+});
+
 app.get('/api/admin/config', requireOwner, (req, res) => {
   res.json({ products: getRawProducts(), planPrices: getPlanPrices(), botPrices: getBotPrices(), globalBotPrices: getGlobalBotPrices(), globalSchedule: { windows: getGlobalWindows() }, botNumber: getBotNumber(), amPrice: getAmPrice(), amApkUrl: getAmApkUrl(), dana: getDanaNumber() });
 });
