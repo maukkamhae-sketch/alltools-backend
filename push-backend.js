@@ -59,6 +59,52 @@ function registerPush(app, { db, requireAuth, requireOwner }) {
     return item;
   }
 
+  // ---- Update aplikasi (apk): apk mengecek versi terbaru saat dibuka ----
+  const APP_KEYS = ['publik', 'admin'];
+  function appCfg(key) {
+    const all = db.getSettings().appUpdate;
+    return (all && typeof all === 'object' && all[key]) || {};
+  }
+
+  // Publik: dipakai apk untuk tahu ada versi baru atau tidak.
+  app.get('/api/app/version', (req, res) => {
+    const key = APP_KEYS.includes(req.query.app) ? req.query.app : 'publik';
+    const c = appCfg(key);
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      versionCode: parseInt(c.versionCode, 10) || 0,
+      versionName: String(c.versionName || ''),
+      apkUrl: String(c.apkUrl || ''),
+      notes: String(c.notes || ''),
+      force: !!c.force,
+    });
+  });
+
+  app.get('/api/admin/app-update', requireOwner, (req, res) => {
+    res.json({ publik: appCfg('publik'), admin: appCfg('admin') });
+  });
+
+  app.put('/api/admin/app-update', requireOwner, (req, res) => {
+    const b = req.body || {};
+    const key = String(b.app || 'publik');
+    if (!APP_KEYS.includes(key)) return res.status(400).json({ error: 'Aplikasi tidak dikenal.' });
+    const versionCode = parseInt(b.versionCode, 10);
+    if (!(versionCode >= 0)) return res.status(400).json({ error: 'Kode versi harus angka (0 atau lebih).' });
+    const apkUrl = String(b.apkUrl || '').trim().slice(0, 300);
+    if (apkUrl && !/^https:\/\//.test(apkUrl)) return res.status(400).json({ error: 'Link apk harus diawali https://' });
+    const cur = db.getSettings().appUpdate;
+    const next = Object.assign({}, cur && typeof cur === 'object' ? cur : {});
+    next[key] = {
+      versionCode,
+      versionName: String(b.versionName || '').trim().slice(0, 20),
+      apkUrl,
+      notes: String(b.notes || '').trim().slice(0, 300),
+      force: !!b.force,
+    };
+    db.updateSettings({ appUpdate: next });
+    res.json({ ok: true, config: next[key] });
+  });
+
   // Publik: apk Android mengecek pengumuman baru tiap beberapa menit.
   // since=0 -> tidak ada pengumuman, hanya mengembalikan 'now' sebagai titik awal.
   app.get('/api/push/latest', (req, res) => {

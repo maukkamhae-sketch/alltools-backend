@@ -282,6 +282,21 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       <div class="msg" id="pu-msg"></div>
       <div class="small" id="pu-count" style="margin-top:10px"></div>
     </div>
+    <div class="card">
+      <b>Update aplikasi (apk AllTools)</b>
+      <div class="small" style="margin:4px 0 10px">Saat pengguna membuka apk dan kode versinya lebih kecil dari yang diisi di sini, muncul dialog "Update tersedia" dengan tombol download. Isi kode versi sama dengan <code>versionCode</code> di build apk terbaru. Kosongkan kode (0) untuk mematikan.</div>
+      <div class="row">
+        <div><label>Kode versi</label><input type="number" id="au-code" min="0" placeholder="3"></div>
+        <div><label>Nama versi</label><input type="text" id="au-name" maxlength="20" placeholder="1.2"></div>
+      </div>
+      <label>Link download apk (https://...)</label>
+      <input type="text" id="au-url" placeholder="https://alltools-neon.vercel.app/alltools.apk">
+      <label>Catatan update (opsional)</label>
+      <input type="text" id="au-notes" maxlength="300" placeholder="Contoh: Perbaikan bug dan fitur baru">
+      <label class="chk"><input type="checkbox" id="au-force"> Wajib update (dialog tidak bisa ditutup)</label>
+      <button class="full" onclick="auSave()">Simpan</button>
+      <div class="msg" id="au-msg"></div>
+    </div>
   </section>
 
   <section id="s-debug" class="hide">
@@ -454,7 +469,7 @@ function tab(name){
   if(name==='maint') loadMaint();
   if(name==='bantuan') loadSupport();
   if(name==='inbox') loadInboxAdmin();
-  if(name==='push') loadPushCount();
+  if(name==='push'){ loadPushCount(); auLoad(); }
   if(name==='gs') loadGs(); else gsStopPoll();
 }
 
@@ -510,6 +525,21 @@ async function pushSend(){
     $('pu-title').value=''; $('pu-body').value=''; $('pu-url').value='';
     loadPushCount();
   }catch(e){ say('pu-msg',e.message); }
+}
+
+async function auLoad(){
+  try{
+    const d=await api('/api/admin/app-update'); const c=d.publik||{};
+    $('au-code').value=c.versionCode||''; $('au-name').value=c.versionName||''; $('au-url').value=c.apkUrl||'';
+    $('au-notes').value=c.notes||''; $('au-force').checked=!!c.force;
+  }catch(e){}
+}
+async function auSave(){
+  const body={app:'publik',versionCode:$('au-code').value||0,versionName:$('au-name').value.trim(),apkUrl:$('au-url').value.trim(),notes:$('au-notes').value.trim(),force:$('au-force').checked};
+  try{
+    await api('/api/admin/app-update',{method:'PUT',body:JSON.stringify(body)});
+    say('au-msg','Tersimpan. Pengguna apk akan melihat dialog update saat membuka aplikasi.',true);
+  }catch(e){ say('au-msg',e.message); }
 }
 
 async function loadInboxAdmin(){
