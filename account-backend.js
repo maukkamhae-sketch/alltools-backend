@@ -10,7 +10,7 @@ const isEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 120;
 const ownerEmail = () => (process.env.OWNER_EMAIL || '').toLowerCase();
 
 function registerAccountAdmin(app, { db, requireOwner }) {
-  const safe = (u) => ({ id: u.id, name: u.name, email: u.email, plan: u.plan, roleBadge: u.roleBadge || '', createdAt: u.createdAt || null });
+  const safe = (u) => ({ id: u.id, name: u.name, email: u.email, plan: u.plan, roleBadge: u.roleBadge || '', balance: Number(u.balance) || 0, createdAt: u.createdAt || null });
   const list = (v) => (Array.isArray(v) ? v : []);
 
   function audit(action, userId, note) {
@@ -155,6 +155,23 @@ function registerAccountAdmin(app, { db, requireOwner }) {
     db.saveUser(u);
     dropGrants(u.id, 'role');
     audit('titel', u.id, 'Titel ' + before + ' → ' + (t || '-') + ' (permanen)');
+    res.json({ ok: true, account: safe(u) });
+  });
+
+  // ---- atur saldo: mode "add" (tambah, boleh negatif = kurangi) atau "set" (isi persis) ----
+  app.post('/api/admin/accounts/:id/balance', requireOwner, (req, res) => {
+    const u = target(req, res); if (!u) return;
+    const b = req.body || {};
+    const mode = b.mode === 'set' ? 'set' : 'add';
+    const amount = Math.round(Number(b.amount));
+    if (!Number.isFinite(amount) || Math.abs(amount) > 100000000) return res.status(400).json({ error: 'Nominal tidak valid.' });
+    if (mode === 'set' && amount < 0) return res.status(400).json({ error: 'Saldo tidak boleh negatif.' });
+    const before = Number(u.balance) || 0;
+    const after = mode === 'set' ? amount : before + amount;
+    if (after < 0) return res.status(400).json({ error: 'Saldo tidak cukup untuk dikurangi sebanyak itu (saldo sekarang ' + before + ').' });
+    u.balance = after;
+    db.saveUser(u);
+    audit('saldo', u.id, 'Saldo ' + before + ' → ' + after + (mode === 'set' ? ' (diatur)' : ' (' + (amount >= 0 ? '+' : '') + amount + ')') + (b.note ? ' — ' + String(b.note).slice(0, 80) : ''));
     res.json({ ok: true, account: safe(u) });
   });
 

@@ -142,6 +142,7 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
     <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
     <button id="t-order" onclick="tab('order')">Pesanan</button>
+    <button id="t-saldo" onclick="tab('saldo')">Saldo</button>
     <button id="t-redeem" onclick="tab('redeem')">Redeem</button>
     <button id="t-debug" onclick="tab('debug')">Cek Device</button>
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
@@ -150,6 +151,29 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-push" onclick="tab('push')">Notifikasi</button>
     <button id="t-gs" onclick="tab('gs')">Sender Global</button>
   </div>
+
+  <section id="s-saldo" class="hide">
+    <div class="card">
+      <b>Saldo akun user</b>
+      <div class="small" style="margin:4px 0 10px">Cari akun (nama, email, atau ID), lalu tambah, kurangi, atau atur saldonya. Isi saldo dari user masuk lewat tab Pesanan (Konfirmasi) atau tombol Telegram. Semua perubahan tercatat di riwayat akun.</div>
+      <div class="sp-bar"><input type="text" id="sd-q" placeholder="Nama / email / ID akun" autocomplete="off" onkeydown="if(event.key==='Enter')sdSearch()"><button onclick="sdSearch()">Cari</button></div>
+      <div id="sd-list"></div>
+    </div>
+    <div class="card hide" id="sd-edit">
+      <div class="top"><b id="sd-name"></b><span class="badge" id="sd-bal" style="background:var(--ok)"></span></div>
+      <div class="small" id="sd-mail"></div>
+      <label>Nominal (Rp)</label>
+      <input type="number" id="sd-amt" inputmode="numeric" placeholder="Contoh: 50000">
+      <label>Catatan (opsional)</label>
+      <input type="text" id="sd-note" maxlength="80" placeholder="Contoh: kompensasi / koreksi deposit">
+      <div class="row" style="margin-top:12px">
+        <div><button class="ok full" style="margin-top:0" onclick="sdAdjust('add')">+ Tambah</button></div>
+        <div><button class="danger full" style="margin-top:0" onclick="sdAdjust('sub')">− Kurangi</button></div>
+      </div>
+      <button class="sec full" onclick="sdAdjust('set')">Atur saldo jadi nominal ini</button>
+    </div>
+    <div class="msg" id="sd-msg"></div>
+  </section>
 
   <section id="s-redeem" class="hide">
     <div class="card">
@@ -354,7 +378,7 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','redeem','debug','maint','inbox','bantuan','push','gs']){
+  for(const t of ['produk','harga','order','saldo','redeem','debug','maint','inbox','bantuan','push','gs']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
@@ -589,6 +613,36 @@ async function saveHarga(){
   }catch(e){ say('h-msg',e.message); }
 }
 
+/* ---------- saldo akun ---------- */
+let sdAcc=null;
+async function sdSearch(){
+  const q=$('sd-q').value.trim();
+  if(q.length<2){ say('sd-msg','Ketik minimal 2 huruf.'); return; }
+  try{
+    const d=await api('/api/admin/accounts?q='+encodeURIComponent(q));
+    $('sd-msg').className='msg';
+    $('sd-list').innerHTML=d.accounts.map(a=>`<button class="sp-row" onclick='sdPick(${JSON.stringify(a).replace(/'/g,"&#39;")})'>
+        <div class="top"><b>${esc(a.name)}</b><span class="badge" style="background:var(--ok)">${rp(a.balance)}</span></div>
+        <div class="sp-last">${esc(a.email)} · ${esc(a.plan)}</div></button>`).join('')||'<div class="small" style="margin-top:8px;">Akun tidak ditemukan.</div>';
+  }catch(e){ say('sd-msg',e.message); }
+}
+function sdPick(a){
+  sdAcc=a; $('sd-edit').classList.remove('hide');
+  $('sd-name').textContent=a.name; $('sd-bal').textContent=rp(a.balance); $('sd-mail').textContent=a.email+' · ID '+a.id;
+  $('sd-amt').value=''; $('sd-note').value='';
+}
+async function sdAdjust(kind){
+  if(!sdAcc) return;
+  const n=Math.round(Number($('sd-amt').value));
+  if(!Number.isFinite(n)||n<=0&&kind!=='set'||n<0){ say('sd-msg','Isi nominal yang valid.'); return; }
+  const label=kind==='add'?'Tambah '+rp(n):kind==='sub'?'Kurangi '+rp(n):'Atur saldo jadi '+rp(n);
+  if(!confirm(label+' untuk '+sdAcc.name+'?')) return;
+  try{
+    const d=await api('/api/admin/accounts/'+encodeURIComponent(sdAcc.id)+'/balance',{method:'POST',body:JSON.stringify({mode:kind==='set'?'set':'add',amount:kind==='sub'?-n:n,note:$('sd-note').value.trim()})});
+    sdPick(d.account); say('sd-msg','Saldo sekarang '+rp(d.account.balance)+'.',true); sdSearch();
+  }catch(e){ say('sd-msg',e.message); }
+}
+
 /* ---------- pesanan ---------- */
 const ST={awaiting_payment:['Belum bayar','var(--soft)'],waiting_confirmation:['Menunggu konfirmasi','var(--amber)'],pending:['Pending','var(--soft)'],paid:['Lunas','var(--ok)'],failed:['Ditolak/Gagal','var(--danger)']};
 async function loadOrders(){
@@ -597,10 +651,10 @@ async function loadOrders(){
     $('olist').innerHTML=d.orders.map(o=>{
       const st=ST[o.status]||[o.status,'var(--soft)'];
       const open=!['paid','failed'].includes(o.status);
-      const detail=o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):o.type==='antimaling'?('AntiMaling: '+esc(o.deviceLabel)):('Ke: '+esc(o.phoneNumber));
+      const detail=o.type==='deposit'?('Isi saldo: '+rp(o.amount)+' (transfer '+rp(o.price)+')'):o.type==='shop'?('Titel/Item: '+esc(o.itemName)):o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):o.type==='antimaling'?('AntiMaling: '+esc(o.deviceLabel)):('Ke: '+esc(o.phoneNumber));
       return `<div class="card">
         <div class="top"><b>${esc(o.productLabel)}</b><span class="badge" style="background:${st[1]}">${st[0]}</span></div>
-        <div class="small">${detail} · ${rp(o.price)}</div>
+        <div class="small">${detail} · ${rp(o.price)}${o.paidWith==='saldo'?' · dibayar pakai saldo':''}</div>
         <div class="small">${esc(o.userName)} (${esc(o.userEmail)})</div>
         <div class="small">${esc(new Date(o.createdAt).toLocaleString('id-ID'))} · ${esc(o.orderId)}</div>
         ${open?`<div class="row" style="margin-top:10px"><button class="ok" onclick="settle('${esc(o.orderId)}','ok')">Konfirmasi</button><button class="danger" onclick="settle('${esc(o.orderId)}','no')">Tolak</button></div>`:''}

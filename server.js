@@ -157,6 +157,7 @@ function publicUser(user) {
   const unlimited = user.plan === 'owner' || user.plan === 'basic' || user.plan === 'pro';
   return {
     id: user.id, name: user.name, email: user.email, plan: user.plan, roleBadge: user.roleBadge || '',
+    balance: Number(user.balance) || 0,
     quota: user.quota,
     limits: unlimited
       ? { downloads: 'unlimited', ai: user.plan === 'pro' || user.plan === 'owner' ? 'unlimited' : 100, enhance: 'unlimited', convert: 'unlimited' }
@@ -520,7 +521,7 @@ app.post('/api/pulsa/create-transaction', requireAuth, async (req, res) => {
 });
 
 app.get('/api/pulsa/orders', requireAuth, (req, res) => {
-  res.json({ orders: db.getOrdersForUser(req.user.id).filter(o => !['premium', 'bot', 'antimaling', 'shop'].includes(o.type)) });
+  res.json({ orders: db.getOrdersForUser(req.user.id).filter(o => !['premium', 'bot', 'antimaling', 'shop', 'deposit'].includes(o.type)) });
 });
 
 
@@ -593,6 +594,41 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
     const r = redeemApi.applyPromo(req.user.id, extra.type, price);
     if (r && !(extra.type === 'pulsa' && r.price < extra.basePrice)) { promo = r; price = r.price; label = `${label} (kode ${r.code})`; }
   }
+  // Bayar pakai saldo akun: saldo dipotong langsung, pesanan otomatis lunas (tanpa kode unik / konfirmasi DANA).
+  if (req.body.payWith === 'saldo') {
+    const fresh = db.findUserById(req.user.id);
+    const bal = Number(fresh.balance) || 0;
+    if (bal < price) {
+      return res.status(402).json({ error: 'Saldo tidak cukup. Saldo kamu Rp ' + bal.toLocaleString('id-ID') + ', butuh Rp ' + price.toLocaleString('id-ID') + '. Isi saldo dulu di menu Saldo.', balance: bal, need: price });
+    }
+    fresh.balance = bal - price;
+    db.saveUser(fresh);
+    const sid = `SALDO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const sorder = {
+      orderId: sid, userId: fresh.id, productLabel: label, price, uniqueCode: 0,
+      status: 'awaiting_payment', paidWith: 'saldo', createdAt: new Date().toISOString(), ...extra,
+      ...(promo ? { promoCode: promo.code, promoDiscount: promo.discount } : {}),
+    };
+    db.saveOrder(sorder);
+    if (promo && redeemApi) redeemApi.reserve(fresh.id, promo.code, sid);
+    const result = settleOrder(sorder, 'ok');
+    if (!result.ok) { // gagal memproses: kembalikan saldo
+      fresh.balance = (Number(db.findUserById(fresh.id).balance) || 0) + price;
+      db.saveUser(fresh);
+      return res.status(500).json({ error: 'Gagal memproses pesanan, saldo dikembalikan.' });
+    }
+    // Pesanan yang harus diisi manual oleh Owner: kabari lewat Telegram.
+    if (extra.type === 'pulsa' || (extra.type === 'shop' && extra.itemKind !== 'role')) {
+      const d = extra.type === 'pulsa'
+        ? `Produk: ${escapeHtml(label)}\nNomor tujuan: ${escapeHtml(extra.phoneNumber)}`
+        : `Item Shop: ${escapeHtml(extra.itemName)} (kirim manual)`;
+      sendTelegramMessage(
+        `🔔 <b>Pesanan Dibayar Pakai Saldo</b>\n\n${d}\nTotal: Rp ${price.toLocaleString('id-ID')}\n` +
+        `Pemesan: ${escapeHtml(fresh.name)} (${escapeHtml(fresh.email)})\nOrder ID: ${escapeHtml(sid)}\n\nStatus: SUDAH DIBAYAR ✅ — tolong proses manual ya.`
+      );
+    }
+    return res.json({ orderId: sid, label, total: price, paidWith: 'saldo', status: 'paid', balance: fresh.balance, note: result.note, discount: promo ? promo.discount : 0 });
+  }
   const uniqueCode = 1 + Math.floor(Math.random() * 99);
   const total = price + uniqueCode;
   const orderId = `MANUAL-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -605,6 +641,77 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
   res.json({ orderId, label, total, dana: getDanaNumber(), discount: promo ? promo.discount : 0 });
 });
 
+/* ---------------------------------------------------------- */
+/* Saldo: user isi saldo (deposit) lewat DANA + kode unik, Owner  */
+/* konfirmasi dari Telegram/Web Admin, lalu saldo dipakai untuk   */
+/* bayar pesanan (kirim payWith: 'saldo' ke /api/manual/create).  */
+/* ---------------------------------------------------------- */
+const DEPOSIT_MIN = 10000;
+const DEPOSIT_MAX = 5000000;
+
+app.get('/api/saldo', requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const orders = db.getOrdersForUser(req.user.id, 200);
+  const history = orders
+    .filter(o => o.type === 'deposit' || (o.paidWith === 'saldo' && o.status === 'paid'))
+    .slice(0, 30)
+    .map(o => o.type === 'deposit'
+      ? { orderId: o.orderId, kind: 'deposit', amount: o.amount, total: o.price, status: o.status, createdAt: o.createdAt }
+      : { orderId: o.orderId, kind: 'spend', amount: -o.price, label: o.productLabel, status: o.status, createdAt: o.createdAt });
+  res.json({ balance: Number(req.user.balance) || 0, min: DEPOSIT_MIN, max: DEPOSIT_MAX, dana: getDanaNumber(), history });
+});
+
+app.post('/api/saldo/deposit', requireAuth, (req, res) => {
+  const amount = Math.round(Number((req.body || {}).amount));
+  if (!Number.isFinite(amount) || amount < DEPOSIT_MIN) return res.status(400).json({ error: 'Minimal isi saldo Rp ' + DEPOSIT_MIN.toLocaleString('id-ID') + '.' });
+  if (amount > DEPOSIT_MAX) return res.status(400).json({ error: 'Maksimal sekali isi saldo Rp ' + DEPOSIT_MAX.toLocaleString('id-ID') + '.' });
+  // Batasi deposit menggantung supaya tidak bisa spam notifikasi ke Telegram Owner.
+  const pending = db.getOrdersForUser(req.user.id, 100).filter(o => o.type === 'deposit' && ['awaiting_payment', 'waiting_confirmation'].includes(o.status));
+  if (pending.length >= 3) return res.status(429).json({ error: 'Ada 3 deposit yang belum selesai. Selesaikan atau tunggu konfirmasi dulu.' });
+  const uniqueCode = 1 + Math.floor(Math.random() * 99);
+  const total = amount + uniqueCode;
+  const orderId = `DEPO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  db.saveOrder({
+    orderId, userId: req.user.id, type: 'deposit', productLabel: 'Isi Saldo', amount,
+    price: total, uniqueCode, status: 'awaiting_payment', createdAt: new Date().toISOString(),
+  });
+  res.json({ orderId, amount, total, uniqueCode, dana: getDanaNumber() });
+});
+
+// Setelah transfer, user tekan "Sudah bayar": memakai /api/manual/claim yang sama (kirim { orderId }).
+
+// Bayar pesanan yang sudah dibuat lewat /api/manual/create memakai saldo (dipanggil dari jendela pembayaran di app).
+// Kode unik dibuang dari harga karena tidak ada transfer yang perlu dicocokkan.
+app.post('/api/saldo/pay-order', requireAuth, (req, res) => {
+  const order = db.findOrderByOrderId(String((req.body || {}).orderId || ''));
+  if (!order || order.userId !== req.user.id) return res.status(404).json({ error: 'Pesanan tidak ditemukan.' });
+  if (order.type === 'deposit') return res.status(400).json({ error: 'Isi saldo tidak bisa dibayar pakai saldo.' });
+  if (order.status !== 'awaiting_payment') return res.status(409).json({ error: 'Pesanan ini sudah diproses atau sedang menunggu konfirmasi.' });
+  const price = order.price - (Number(order.uniqueCode) || 0);
+  const user = db.findUserById(req.user.id);
+  const bal = Number(user.balance) || 0;
+  if (bal < price) return res.status(402).json({ error: 'Saldo tidak cukup. Saldo kamu Rp ' + bal.toLocaleString('id-ID') + ', butuh Rp ' + price.toLocaleString('id-ID') + '.', balance: bal, need: price });
+  user.balance = bal - price;
+  db.saveUser(user);
+  order.price = price; order.uniqueCode = 0; order.paidWith = 'saldo';
+  db.saveOrder(order);
+  const result = settleOrder(order, 'ok');
+  if (!result.ok) { // gagal memproses: kembalikan saldo
+    const u2 = db.findUserById(user.id); u2.balance = (Number(u2.balance) || 0) + price; db.saveUser(u2);
+    return res.status(500).json({ error: 'Gagal memproses pesanan, saldo dikembalikan.' });
+  }
+  if (order.type === 'pulsa' || (order.type === 'shop' && order.itemKind !== 'role')) {
+    const d = order.type === 'pulsa'
+      ? `Produk: ${escapeHtml(order.productLabel)}\nNomor tujuan: ${escapeHtml(order.phoneNumber)}`
+      : `Item Shop: ${escapeHtml(order.itemName)} (kirim manual)`;
+    sendTelegramMessage(
+      `🔔 <b>Pesanan Dibayar Pakai Saldo</b>\n\n${d}\nTotal: Rp ${price.toLocaleString('id-ID')}\n` +
+      `Pemesan: ${escapeHtml(user.name)} (${escapeHtml(user.email)})\nOrder ID: ${escapeHtml(order.orderId)}\n\nStatus: SUDAH DIBAYAR ✅ — tolong proses manual ya.`
+    );
+  }
+  res.json({ ok: true, status: 'paid', balance: user.balance, note: result.note });
+});
+
 // User menekan "Sudah bayar": kirim notifikasi ke Telegram dengan tombol konfirmasi.
 app.post('/api/manual/claim', requireAuth, async (req, res) => {
   const { orderId } = req.body || {};
@@ -614,7 +721,9 @@ app.post('/api/manual/claim', requireAuth, async (req, res) => {
   if (order.status === 'awaiting_payment') {
     order.status = 'waiting_confirmation';
     db.saveOrder(order);
-    const detail = order.type === 'premium'
+    const detail = order.type === 'deposit'
+      ? `Isi Saldo: Rp ${order.amount.toLocaleString('id-ID')}`
+      : order.type === 'premium'
       ? `Paket: ${escapeHtml(order.plan)}`
       : order.type === 'shop'
         ? `Item Shop: ${escapeHtml(order.itemName)}${order.itemKind === 'role' ? '\nLabel role: ' + escapeHtml(order.roleBadge) : ' (kirim manual)'}`
@@ -695,6 +804,13 @@ function settleOrder(order, action) {
     order.status = 'paid';
     db.saveOrder(order);
     if (redeemApi) redeemApi.onSettle(order, 'ok');
+    if (order.type === 'deposit') {
+      const user = db.findUserById(order.userId);
+      if (!user) return { ok: true, note: '⚠️ Dikonfirmasi, tapi akun pemesan tidak ditemukan. Saldo belum masuk.' };
+      user.balance = (Number(user.balance) || 0) + order.amount;
+      db.saveUser(user);
+      return { ok: true, note: `✅ Dikonfirmasi. Saldo Rp ${order.amount.toLocaleString('id-ID')} sudah masuk ke akun ${user.name}.` };
+    }
     if (order.type === 'premium') {
       const user = db.findUserById(order.userId);
       if (user) { user.plan = order.plan; db.saveUser(user); }
