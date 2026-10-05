@@ -14,6 +14,7 @@ const { registerBotSender } = require('./bot-sender');
 const { registerStatusMusic } = require('./status-music-backend');
 const { registerPush } = require('./push-backend');
 const { registerRedeem } = require('./redeem-backend');
+const { registerAccountAdmin } = require('./account-backend');
 let redeemApi = null;
 
 const app = express();
@@ -141,6 +142,9 @@ function requireAuth(req, res, next) {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = db.findUserById(payload.id);
     if (!user) return res.status(401).json({ error: 'Akun tidak ditemukan.' });
+    if (user.tokensRevokedAt && (payload.iat || 0) < Math.floor(user.tokensRevokedAt / 1000)) {
+      return res.status(401).json({ error: 'Sesi login tidak valid, coba masuk lagi.' });
+    }
     db.resetQuotaIfNewDay(user);
     req.user = user;
     next();
@@ -587,7 +591,7 @@ app.post('/api/manual/create', requireAuth, (req, res) => {
   let promo = null;
   if (redeemApi) {
     const r = redeemApi.applyPromo(req.user.id, extra.type, price);
-    if (r) { promo = r; price = r.price; label = `${label} (kode ${r.code})`; }
+    if (r && !(extra.type === 'pulsa' && r.price < extra.basePrice)) { promo = r; price = r.price; label = `${label} (kode ${r.code})`; }
   }
   const uniqueCode = 1 + Math.floor(Math.random() * 99);
   const total = price + uniqueCode;
@@ -1426,6 +1430,7 @@ registerStatusMusic(app, { db, requireAuth });
 /* Notifikasi push (promo/diskon dari Owner) */
 registerPush(app, { db, requireAuth, requireOwner });
 redeemApi = registerRedeem(app, { db, requireAuth, requireOwner });
+registerAccountAdmin(app, { db, requireOwner });
 
 app.get('/', (req, res) => {
   res.json({ ok: true, name: 'alltools-backend' });
