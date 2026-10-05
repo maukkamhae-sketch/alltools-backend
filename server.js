@@ -656,7 +656,7 @@ app.get('/api/saldo', requireAuth, (req, res) => {
     .filter(o => o.type === 'deposit' || (o.paidWith === 'saldo' && o.status === 'paid'))
     .slice(0, 30)
     .map(o => o.type === 'deposit'
-      ? { orderId: o.orderId, kind: 'deposit', amount: o.amount, total: o.price, status: o.status, createdAt: o.createdAt }
+      ? { orderId: o.orderId, kind: 'deposit', label: o.source === 'redeem' ? 'Kode redeem ' + o.redeemCode : 'Isi saldo', amount: o.amount, total: o.price, status: o.status, createdAt: o.createdAt }
       : { orderId: o.orderId, kind: 'spend', amount: -o.price, label: o.productLabel, status: o.status, createdAt: o.createdAt });
   res.json({ balance: Number(req.user.balance) || 0, min: DEPOSIT_MIN, max: DEPOSIT_MAX, dana: getDanaNumber(), history });
 });

@@ -49,7 +49,7 @@ button{border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-weig
   <div class="card">
     <b>Buat kode baru</b>
     <label>Jenis</label>
-    <select id="kind"><option value="discount">Diskon (dipakai saat beli)</option><option value="plan">Paket gratis (langsung aktif)</option></select>
+    <select id="kind"><option value="discount">Diskon (dipakai saat beli)</option><option value="plan">Paket gratis (langsung aktif)</option><option value="balance">Saldo (uang masuk ke akun)</option></select>
 
     <div id="f-discount">
       <div class="row">
@@ -67,6 +67,17 @@ button{border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-weig
         <label><input type="checkbox" value="pulsa"> Pulsa</label>
       </div>
       <div class="meta">Tidak ada yang dicentang = semua jenis pembelian.</div>
+    </div>
+
+    <div id="f-balance" class="hide">
+      <label>Nominal saldo (Rp)</label>
+      <input id="bamount" type="number" inputmode="numeric" placeholder="mis. 20000">
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="sm" type="button" onclick="$('bamount').value=10000">10 rb</button>
+        <button class="sm" type="button" onclick="$('bamount').value=20000">20 rb</button>
+        <button class="sm" type="button" onclick="$('bamount').value=50000">50 rb</button>
+      </div>
+      <div class="warn">Saldo langsung masuk ke akun user saat kode diklaim dan bisa dipakai bayar. Ini uang sungguhan, jadi <b>kuota klaim wajib diisi</b> (minimal 1). Total saldo yang keluar = nominal x kuota.</div>
     </div>
 
     <div id="f-plan" class="hide">
@@ -119,7 +130,7 @@ $('lbtn').onclick=async()=>{
   b.disabled=false;
 };
 $('out').onclick=logout;
-$('kind').onchange=()=>{ const p=$('kind').value==='plan'; $('f-plan').classList.toggle('hide',!p); $('f-discount').classList.toggle('hide',p); };
+$('kind').onchange=()=>{ const k=$('kind').value; $('f-plan').classList.toggle('hide',k!=='plan'); $('f-balance').classList.toggle('hide',k!=='balance'); $('f-discount').classList.toggle('hide',k!=='discount'); };
 
 async function load(){
   const el=$('list');
@@ -160,6 +171,7 @@ $('create').onclick=async()=>{
   const kind=$('kind').value;
   const body={kind,code:$('code').value,note:$('note').value,maxUses:$('maxUses').value,expiresAt:$('expiresAt').value?($('expiresAt').value+'T23:59:59+07:00'):''};
   if(kind==='plan') body.plan=$('plan').value;
+  else if(kind==='balance') body.amount=$('bamount').value;
   else{
     body.percent=$('percent').value; body.amount=$('amount').value; body.maxDiscount=$('maxDiscount').value;
     body.appliesTo=[...document.querySelectorAll('#applies input:checked')].map(i=>i.value);
@@ -167,7 +179,7 @@ $('create').onclick=async()=>{
   try{
     const d=await api('/api/admin/redeem',{method:'POST',body:JSON.stringify(body)});
     show(m,'ok','Kode dibuat: '+d.code);
-    ['code','note','percent','amount','maxDiscount'].forEach(i=>$(i).value='');
+    ['code','note','percent','amount','maxDiscount','bamount'].forEach(i=>$(i).value='');
     load();
   }catch(e){ show(m,'err',e.message); }
   btn.disabled=false;
