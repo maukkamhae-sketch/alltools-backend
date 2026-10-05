@@ -42,6 +42,32 @@ function registerPush(app, { db, requireAuth, requireOwner }) {
   }
   function saveSubs(list) { db.updateSettings({ pushSubs: list.slice(-SUB_MAX) }); }
 
+  // Riwayat pengumuman (maks 30). Dibaca apk Android lewat /api/push/latest karena
+  // WebView tidak mendukung Web Push. ID = waktu server (ms), selalu naik.
+  function allNotices() {
+    const raw = db.getSettings().pushNotices;
+    return Array.isArray(raw) ? raw : [];
+  }
+  function addNotice(n) {
+    const list = allNotices();
+    let id = Date.now();
+    const last = list.length ? list[list.length - 1].id : 0;
+    if (id <= last) id = last + 1;
+    const item = { id, title: n.title, body: n.body, url: n.url || '' };
+    list.push(item);
+    db.updateSettings({ pushNotices: list.slice(-30) });
+    return item;
+  }
+
+  // Publik: apk Android mengecek pengumuman baru tiap beberapa menit.
+  // since=0 -> tidak ada pengumuman, hanya mengembalikan 'now' sebagai titik awal.
+  app.get('/api/push/latest', (req, res) => {
+    const since = Math.max(parseInt(req.query.since, 10) || 0, 0);
+    const notices = since > 0 ? allNotices().filter(n => n.id > since).slice(0, 5) : [];
+    res.set('Cache-Control', 'no-store');
+    res.json({ now: Date.now(), notices });
+  });
+
   // Public: kunci publik VAPID, dibutuhkan browser sebelum subscribe.
   app.get('/api/push/vapid-public-key', (req, res) => {
     res.json({ key: vapid.publicKey });
@@ -74,6 +100,7 @@ function registerPush(app, { db, requireAuth, requireOwner }) {
     if (!title || !body) return res.status(400).json({ error: 'Judul dan isi notifikasi wajib diisi.' });
     if (url && !/^https:\/\//.test(url)) return res.status(400).json({ error: 'Link harus diawali https://' });
 
+    addNotice({ title, body, url });
     const payload = JSON.stringify({ title, body, url: url || undefined, tag: 'promo-' + Date.now() });
     const list = allSubs();
     let sent = 0, dead = [];

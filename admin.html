@@ -506,7 +506,7 @@ async function pushSend(){
   if(!confirm('Kirim notifikasi ini ke semua pengguna sekarang?')) return;
   try{
     const d=await api('/api/admin/push/send',{method:'POST',body:JSON.stringify({title,body,url})});
-    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' pengguna.',true);
+    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' perangkat web. Pengguna apk menerima dalam \u00b115 menit.',true);
     $('pu-title').value=''; $('pu-body').value=''; $('pu-url').value='';
     loadPushCount();
   }catch(e){ say('pu-msg',e.message); }
