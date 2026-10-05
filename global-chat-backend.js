@@ -26,6 +26,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 
 // ---------- Bot Keamanan: daftar kata ----------
 // Kata pendek (<5 huruf) hanya cocok kalau berdiri sendiri sebagai satu kata,
@@ -39,6 +40,12 @@ const BAD_WORDS = [
 const LONG_MIN = 5;
 const MUTE_STEPS_MS = [60 * 1000, 3 * 60 * 1000]; // 1 menit, lalu 3 menit
 const STRIKE_RESET_MS = 30 * 60 * 1000;
+
+// ---------- Stiker ----------
+// Setiap stiker = 1 file gambar di folder "stickers/" (nama file = id + ".webp").
+// Server menolak id di luar daftar ini. Untuk tambah stiker: taruh gambarnya di
+// folder stickers/ lalu tambahkan id-nya di sini.
+const STICKERS = ['besok-aja', 'woilah', 'cerdas', 'nah-ini', 'topik-panas'];
 
 const LEET = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's' };
 const squash = (s) => s.replace(/(.)\1+/g, '$1'); // anjiiing -> anjing
@@ -87,6 +94,15 @@ function registerGlobalChat(app, opts) {
   };
   const fmtDur = (ms) => (ms / 60000) + ' menit';
 
+  // File gambar stiker disajikan dari folder "stickers/" di samping file ini
+  app.use('/stickers', express.static(path.join(__dirname, 'stickers'), { maxAge: '7d' }));
+
+  // Daftar stiker: [{ id, url }]  (url relatif, awali dengan alamat backend di frontend)
+  app.get('/api/chat/stickers', ...mw, (req, res) => {
+    if (!authUser(req)) return res.status(401).json({ error: 'Masuk dulu.' });
+    res.json({ stickers: STICKERS.map((id) => ({ id, url: `/stickers/${id}.webp` })) });
+  });
+
   app.get('/api/chat/global', ...mw, (req, res) => {
     if (!authUser(req)) return res.status(401).json({ error: 'Masuk dulu.' });
     const after = parseInt(req.query.after, 10) || 0;
@@ -97,8 +113,10 @@ function registerGlobalChat(app, opts) {
   app.post('/api/chat/global', ...mw, (req, res) => {
     const u = authUser(req);
     if (!u) return res.status(401).json({ error: 'Masuk dulu.' });
-    const text = String((req.body && req.body.text) || '').replace(/\s+/g, ' ').trim().slice(0, MAX_LEN);
-    if (!text) return res.status(400).json({ error: 'Pesan kosong.' });
+    const sticker = String((req.body && req.body.sticker) || '');
+    if (sticker && !STICKERS.includes(sticker)) return res.status(400).json({ error: 'Stiker tidak valid.' });
+    const text = sticker ? '' : String((req.body && req.body.text) || '').replace(/\s+/g, ' ').trim().slice(0, MAX_LEN);
+    if (!text && !sticker) return res.status(400).json({ error: 'Pesan kosong.' });
     const now = Date.now();
 
     // Masih di-mute?
@@ -122,7 +140,7 @@ function registerGlobalChat(app, opts) {
 
     if (now - (lastSend.get(u.id) || 0) < COOLDOWN_MS) return res.status(429).json({ error: 'Pelan-pelan, jangan spam.' });
     lastSend.set(u.id, now);
-    const message = pushMsg({ user_id: u.id, name: u.name || 'User', plan: u.plan || 'free', badge: u.roleBadge || '', text });
+    const message = pushMsg({ user_id: u.id, name: u.name || 'User', plan: u.plan || 'free', badge: u.roleBadge || '', text, sticker });
     res.json({ message });
   });
 }
