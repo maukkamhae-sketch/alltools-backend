@@ -142,7 +142,8 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-produk" class="on" onclick="tab('produk')">Produk</button>
     <button id="t-harga" onclick="tab('harga')">Harga & DANA</button>
     <button id="t-order" onclick="tab('order')">Pesanan</button>
-    <button id="t-saldo" onclick="tab('saldo')">Saldo</button>
+    <button id="t-users" onclick="tab('users')">Data User</button>
+    <button id="t-saldo" onclick="tab('saldo')">Akun</button>
     <button id="t-redeem" onclick="tab('redeem')">Redeem</button>
     <button id="t-debug" onclick="tab('debug')">Cek Device</button>
     <button id="t-maint" onclick="tab('maint')">Maintenance</button>
@@ -152,25 +153,89 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
     <button id="t-gs" onclick="tab('gs')">Sender Global</button>
   </div>
 
+  <section id="s-users" class="hide">
+    <div class="card">
+      <b>Data User</b>
+      <div class="small" id="us-sum" style="margin:4px 0 10px">Memuat...</div>
+      <div class="sp-bar"><input type="text" id="us-q" placeholder="Cari nama / email / ID" autocomplete="off" onkeydown="if(event.key==='Enter')usLoad(true)"><button onclick="usLoad(true)">Cari</button></div>
+      <div class="row">
+        <div><label>Paket</label><select id="us-plan" onchange="usLoad(true)"><option value="">Semua</option><option value="free">Gratis</option><option value="basic">Premium Basic</option><option value="pro">Premium Pro</option><option value="owner">Owner</option></select></div>
+        <div><label>Titel</label><select id="us-titled" onchange="usLoad(true)"><option value="">Semua</option><option value="1">Punya titel</option></select></div>
+      </div>
+      <div id="us-list"></div>
+      <button class="sec full" id="us-more" onclick="usLoad(false)" style="display:none">Muat lagi</button>
+    </div>
+    <div class="small" style="padding:0 4px">Ketuk user untuk membuka detailnya di tab Akun: atur paket, titel, saldo, nama/email, dan reset password. Kalau akunnya hilang dari daftar, buat ulang di tab Akun.</div>
+    <div class="msg" id="us-msg"></div>
+  </section>
+
   <section id="s-saldo" class="hide">
     <div class="card">
-      <b>Saldo akun user</b>
-      <div class="small" style="margin:4px 0 10px">Cari akun (nama, email, atau ID), lalu tambah, kurangi, atau atur saldonya. Isi saldo dari user masuk lewat tab Pesanan (Konfirmasi) atau tombol Telegram. Semua perubahan tercatat di riwayat akun.</div>
-      <div class="sp-bar"><input type="text" id="sd-q" placeholder="Nama / email / ID akun" autocomplete="off" onkeydown="if(event.key==='Enter')sdSearch()"><button onclick="sdSearch()">Cari</button></div>
+      <b>Akun user</b>
+      <div class="small" style="margin:4px 0 10px">Cari akun (nama, email, ID akun, atau ID pesanan). Dari sini kamu bisa reset password, ganti paket/titel, atur saldo, dan buat ulang akun yang datanya hilang. Akun Owner tidak bisa diubah dari sini.</div>
+      <div class="sp-bar"><input type="text" id="sd-q" placeholder="Nama / email / ID" autocomplete="off" onkeydown="if(event.key==='Enter')sdSearch()"><button onclick="sdSearch()">Cari</button></div>
       <div id="sd-list"></div>
     </div>
-    <div class="card hide" id="sd-edit">
-      <div class="top"><b id="sd-name"></b><span class="badge" id="sd-bal" style="background:var(--ok)"></span></div>
-      <div class="small" id="sd-mail"></div>
-      <label>Nominal (Rp)</label>
-      <input type="number" id="sd-amt" inputmode="numeric" placeholder="Contoh: 50000">
-      <label>Catatan (opsional)</label>
-      <input type="text" id="sd-note" maxlength="80" placeholder="Contoh: kompensasi / koreksi deposit">
-      <div class="row" style="margin-top:12px">
-        <div><button class="ok full" style="margin-top:0" onclick="sdAdjust('add')">+ Tambah</button></div>
-        <div><button class="danger full" style="margin-top:0" onclick="sdAdjust('sub')">− Kurangi</button></div>
+
+    <div class="hide" id="sd-edit">
+      <div class="card">
+        <div class="top"><b id="sd-name"></b><span class="badge" id="sd-bal" style="background:var(--ok)"></span></div>
+        <div class="small" id="sd-mail"></div>
+        <div class="small" id="sd-info"></div>
       </div>
-      <button class="sec full" onclick="sdAdjust('set')">Atur saldo jadi nominal ini</button>
+      <div id="sd-actions">
+        <div class="card">
+          <b>Saldo</b>
+          <label>Nominal (Rp)</label>
+          <input type="number" id="sd-amt" inputmode="numeric" placeholder="Contoh: 50000">
+          <label>Catatan (opsional)</label>
+          <input type="text" id="sd-note" maxlength="80" placeholder="Contoh: kompensasi / koreksi deposit">
+          <div class="row" style="margin-top:12px">
+            <div><button class="ok full" style="margin-top:0" onclick="sdAdjust('add')">+ Tambah</button></div>
+            <div><button class="danger full" style="margin-top:0" onclick="sdAdjust('sub')">&minus; Kurangi</button></div>
+          </div>
+          <button class="sec full" onclick="sdAdjust('set')">Atur saldo jadi nominal ini</button>
+        </div>
+        <div class="card">
+          <b>Paket &amp; titel</b>
+          <div class="small">Kalau status Premium atau titel ilang, atur lagi di sini (permanen).</div>
+          <label>Paket</label>
+          <select id="sd-plan"><option value="free">Gratis</option><option value="basic">Premium Basic</option><option value="pro">Premium Pro</option></select>
+          <button class="full" onclick="sdSavePlan()">Simpan paket</button>
+          <label>Titel</label>
+          <select id="sd-title"><option value="">(tanpa titel)</option><option>PREMIUM</option><option>VIP</option><option>RESELLER</option><option>CO-ADMIN</option><option>ADMIN</option></select>
+          <button class="full" onclick="sdSaveTitle()">Simpan titel</button>
+        </div>
+        <div class="card">
+          <b>Nama &amp; email</b>
+          <label>Nama</label><input type="text" id="sd-pname" maxlength="60">
+          <label>Email</label><input type="email" id="sd-pmail">
+          <button class="full" onclick="sdSaveProfile()">Simpan</button>
+        </div>
+        <div class="card">
+          <b>Lupa password</b>
+          <div class="small">Atur password baru untuk user, lalu kasih tahu dia. Semua perangkat yang sedang login ikut dikeluarkan.</div>
+          <label>Password baru (6-72 karakter)</label>
+          <input type="text" id="sd-pw" autocomplete="off">
+          <button class="full" onclick="sdResetPw()">Reset password</button>
+          <button class="danger full" onclick="sdLogout()">Keluarkan dari semua perangkat</button>
+        </div>
+      </div>
+      <div class="card"><b>Pesanan terakhir</b><div id="sd-orders"></div></div>
+      <div class="card"><b>Riwayat tindakan Owner</b><div id="sd-log"></div></div>
+    </div>
+
+    <div class="card">
+      <b>Buat ulang akun</b>
+      <div class="small">Kalau akun user benar-benar hilang dari server, buat lagi di sini lalu kasih tahu email dan passwordnya. Data lama (pesanan, bot) tidak ikut kembali.</div>
+      <label>Nama</label><input type="text" id="nc-name" maxlength="60">
+      <label>Email</label><input type="email" id="nc-mail">
+      <label>Password (6-72 karakter)</label><input type="text" id="nc-pw" autocomplete="off">
+      <div class="row">
+        <div><label>Paket</label><select id="nc-plan"><option value="free">Gratis</option><option value="basic">Premium Basic</option><option value="pro">Premium Pro</option></select></div>
+        <div><label>Titel</label><select id="nc-title"><option value="">(tanpa)</option><option>PREMIUM</option><option>VIP</option><option>RESELLER</option><option>CO-ADMIN</option><option>ADMIN</option></select></div>
+      </div>
+      <button class="full" onclick="sdCreate()">Buat akun</button>
     </div>
     <div class="msg" id="sd-msg"></div>
   </section>
@@ -216,6 +281,21 @@ html.owner-splash-on .hero-banner video.hero-ras{display:block;}
       <button class="full" onclick="pushSend()">Kirim sekarang</button>
       <div class="msg" id="pu-msg"></div>
       <div class="small" id="pu-count" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <b>Update aplikasi (apk AllTools)</b>
+      <div class="small" style="margin:4px 0 10px">Saat pengguna membuka apk dan kode versinya lebih kecil dari yang diisi di sini, muncul dialog "Update tersedia" dengan tombol download. Isi kode versi sama dengan <code>versionCode</code> di build apk terbaru. Kosongkan kode (0) untuk mematikan.</div>
+      <div class="row">
+        <div><label>Kode versi</label><input type="number" id="au-code" min="0" placeholder="3"></div>
+        <div><label>Nama versi</label><input type="text" id="au-name" maxlength="20" placeholder="1.2"></div>
+      </div>
+      <label>Link download apk (https://...)</label>
+      <input type="text" id="au-url" placeholder="https://alltools-neon.vercel.app/alltools.apk">
+      <label>Catatan update (opsional)</label>
+      <input type="text" id="au-notes" maxlength="300" placeholder="Contoh: Perbaikan bug dan fitur baru">
+      <label class="chk"><input type="checkbox" id="au-force"> Wajib update (dialog tidak bisa ditutup)</label>
+      <button class="full" onclick="auSave()">Simpan</button>
+      <div class="msg" id="au-msg"></div>
     </div>
   </section>
 
@@ -378,17 +458,18 @@ async function start(){
 }
 
 function tab(name){
-  for(const t of ['produk','harga','order','saldo','redeem','debug','maint','inbox','bantuan','push','gs']){
+  for(const t of ['produk','harga','order','users','saldo','redeem','debug','maint','inbox','bantuan','push','gs']){
     $('s-'+t).classList.toggle('hide',t!==name);
     $('t-'+t).classList.toggle('on',t===name);
   }
   if(name==='order') loadOrders();
+  if(name==='users') usLoad(true);
   if(name==='redeem') loadRedeemFrame();
   if(name==='debug') loadAmDebug();
   if(name==='maint') loadMaint();
   if(name==='bantuan') loadSupport();
   if(name==='inbox') loadInboxAdmin();
-  if(name==='push') loadPushCount();
+  if(name==='push'){ loadPushCount(); auLoad(); }
   if(name==='gs') loadGs(); else gsStopPoll();
 }
 
@@ -440,10 +521,25 @@ async function pushSend(){
   if(!confirm('Kirim notifikasi ini ke semua pengguna sekarang?')) return;
   try{
     const d=await api('/api/admin/push/send',{method:'POST',body:JSON.stringify({title,body,url})});
-    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' pengguna.',true);
+    say('pu-msg','Terkirim ke '+d.sent+' dari '+d.total+' perangkat web. Pengguna apk menerima dalam \u00b115 menit.',true);
     $('pu-title').value=''; $('pu-body').value=''; $('pu-url').value='';
     loadPushCount();
   }catch(e){ say('pu-msg',e.message); }
+}
+
+async function auLoad(){
+  try{
+    const d=await api('/api/admin/app-update'); const c=d.publik||{};
+    $('au-code').value=c.versionCode||''; $('au-name').value=c.versionName||''; $('au-url').value=c.apkUrl||'';
+    $('au-notes').value=c.notes||''; $('au-force').checked=!!c.force;
+  }catch(e){}
+}
+async function auSave(){
+  const body={app:'publik',versionCode:$('au-code').value||0,versionName:$('au-name').value.trim(),apkUrl:$('au-url').value.trim(),notes:$('au-notes').value.trim(),force:$('au-force').checked};
+  try{
+    await api('/api/admin/app-update',{method:'PUT',body:JSON.stringify(body)});
+    say('au-msg','Tersimpan. Pengguna apk akan melihat dialog update saat membuka aplikasi.',true);
+  }catch(e){ say('au-msg',e.message); }
 }
 
 async function loadInboxAdmin(){
@@ -613,33 +709,102 @@ async function saveHarga(){
   }catch(e){ say('h-msg',e.message); }
 }
 
-/* ---------- saldo akun ---------- */
+/* ---------- data user (daftar semua akun) ---------- */
+let usOffset=0;
+async function usLoad(reset){
+  if(reset) usOffset=0;
+  const qs='?q='+encodeURIComponent($('us-q').value.trim())+'&plan='+encodeURIComponent($('us-plan').value)+'&titled='+encodeURIComponent($('us-titled').value)+'&limit=50&offset='+usOffset;
+  try{
+    const d=await api('/api/admin/users'+qs);
+    $('us-msg').className='msg';
+    const c=d.counts||{};
+    $('us-sum').textContent='Total '+d.totalAll+' user \u00b7 Gratis '+(c.free||0)+' \u00b7 Basic '+(c.basic||0)+' \u00b7 Pro '+(c.pro||0)+' \u00b7 Owner '+(c.owner||0)+' \u00b7 Bertitel '+(c.titled||0)+(d.total!==d.totalAll?' \u00b7 Cocok: '+d.total:'');
+    const rows=d.users.map(a=>`<button class="sp-row" onclick="usOpen('${esc(a.id)}')">
+        <div class="top"><b>${esc(a.name||'(tanpa nama)')}</b><span class="badge" style="background:var(--ok)">${rp(a.balance)}</span></div>
+        <div class="sp-last">${esc(a.email)} &middot; ${esc(a.plan)}${a.roleBadge?' &middot; '+esc(a.roleBadge):''}${a.createdAt?' &middot; daftar '+esc(new Date(a.createdAt).toLocaleDateString('id-ID')):''}</div></button>`).join('');
+    if(reset) $('us-list').innerHTML=rows||'<div class="small" style="margin-top:8px;">Tidak ada user yang cocok.</div>';
+    else $('us-list').insertAdjacentHTML('beforeend',rows);
+    usOffset+=d.users.length;
+    $('us-more').style.display=usOffset<d.total?'block':'none';
+  }catch(e){ say('us-msg',e.message); }
+}
+function usOpen(id){ tab('saldo'); sdOpen(id).then(()=>{ const el=$('sd-edit'); if(el&&el.scrollIntoView) el.scrollIntoView({behavior:'smooth',block:'start'}); }); }
+
+/* ---------- akun user ---------- */
 let sdAcc=null;
+const sdPost=(path,body)=>api('/api/admin/accounts/'+encodeURIComponent(sdAcc.id)+path,{method:'POST',body:JSON.stringify(body||{})});
 async function sdSearch(){
   const q=$('sd-q').value.trim();
   if(q.length<2){ say('sd-msg','Ketik minimal 2 huruf.'); return; }
   try{
     const d=await api('/api/admin/accounts?q='+encodeURIComponent(q));
     $('sd-msg').className='msg';
-    $('sd-list').innerHTML=d.accounts.map(a=>`<button class="sp-row" onclick='sdPick(${JSON.stringify(a).replace(/'/g,"&#39;")})'>
+    $('sd-list').innerHTML=d.accounts.map(a=>`<button class="sp-row" onclick="sdOpen('${esc(a.id)}')">
         <div class="top"><b>${esc(a.name)}</b><span class="badge" style="background:var(--ok)">${rp(a.balance)}</span></div>
-        <div class="sp-last">${esc(a.email)} · ${esc(a.plan)}</div></button>`).join('')||'<div class="small" style="margin-top:8px;">Akun tidak ditemukan.</div>';
+        <div class="sp-last">${esc(a.email)} &middot; ${esc(a.plan)}${a.roleBadge?' &middot; '+esc(a.roleBadge):''}</div></button>`).join('')||'<div class="small" style="margin-top:8px;">Akun tidak ditemukan. Kalau akunnya hilang, buat ulang di bagian bawah.</div>';
   }catch(e){ say('sd-msg',e.message); }
 }
-function sdPick(a){
-  sdAcc=a; $('sd-edit').classList.remove('hide');
-  $('sd-name').textContent=a.name; $('sd-bal').textContent=rp(a.balance); $('sd-mail').textContent=a.email+' · ID '+a.id;
-  $('sd-amt').value=''; $('sd-note').value='';
+async function sdOpen(id){
+  try{
+    const d=await api('/api/admin/accounts/'+encodeURIComponent(id));
+    const a=d.account; sdAcc=a;
+    $('sd-edit').classList.remove('hide');
+    $('sd-name').textContent=a.name; $('sd-bal').textContent=rp(a.balance);
+    $('sd-mail').textContent=a.email+' \u00b7 ID '+a.id+' \u00b7 paket '+a.plan+(a.roleBadge?' \u00b7 titel '+a.roleBadge:'');
+    const gr=(d.grants||[]).map(g=>g.type+' '+g.value+(g.expiresAt?' (sampai '+new Date(g.expiresAt).toLocaleDateString('id-ID')+')':'')).join(', ');
+    $('sd-info').textContent='Bot sewaan: '+d.bots+' \u00b7 Device AntiMaling: '+d.devices+(gr?' \u00b7 Dari kode redeem: '+gr:'');
+    $('sd-actions').classList.toggle('hide',!!d.isOwner);
+    if(d.isOwner) $('sd-info').textContent+=' \u00b7 Akun Owner: tidak bisa diubah dari sini.';
+    $('sd-plan').value=a.plan in {free:1,basic:1,pro:1}?a.plan:'free';
+    $('sd-title').value=a.roleBadge||'';
+    $('sd-pname').value=a.name; $('sd-pmail').value=a.email;
+    $('sd-amt').value=''; $('sd-note').value=''; $('sd-pw').value='';
+    $('sd-orders').innerHTML=(d.orders||[]).map(o=>{ const st=ST[o.status]||[o.status,'var(--soft)'];
+      return `<div class="top" style="padding:6px 0;border-top:1px solid var(--line);"><div class="small" style="margin:0;min-width:0;">${esc(o.label)}<br>${rp(o.price)} &middot; ${esc(new Date(o.createdAt).toLocaleDateString('id-ID'))}</div><span class="badge" style="background:${st[1]}">${st[0]}</span></div>`; }).join('')||'<div class="small">Belum ada pesanan.</div>';
+    $('sd-log').innerHTML=(d.log||[]).map(l=>`<div class="small" style="padding:4px 0;border-top:1px solid var(--line);"><b>${esc(l.action)}</b> &middot; ${esc(l.note)} &middot; ${spTime(l.ts)}</div>`).join('')||'<div class="small">Belum ada tindakan.</div>';
+  }catch(e){ say('sd-msg',e.message); }
 }
-async function sdAdjust(kind){
+async function sdDo(fn,okMsg){
+  try{ await fn(); say('sd-msg',okMsg,true); await sdOpen(sdAcc.id); }
+  catch(e){ say('sd-msg',e.message); }
+}
+function sdAdjust(kind){
   if(!sdAcc) return;
   const n=Math.round(Number($('sd-amt').value));
-  if(!Number.isFinite(n)||n<=0&&kind!=='set'||n<0){ say('sd-msg','Isi nominal yang valid.'); return; }
+  if(!Number.isFinite(n)||(n<=0&&kind!=='set')||n<0){ say('sd-msg','Isi nominal yang valid.'); return; }
   const label=kind==='add'?'Tambah '+rp(n):kind==='sub'?'Kurangi '+rp(n):'Atur saldo jadi '+rp(n);
   if(!confirm(label+' untuk '+sdAcc.name+'?')) return;
+  sdDo(()=>sdPost('/balance',{mode:kind==='set'?'set':'add',amount:kind==='sub'?-n:n,note:$('sd-note').value.trim()}),'Saldo diperbarui.');
+}
+function sdSavePlan(){
+  const v=$('sd-plan').value;
+  if(!confirm('Ubah paket '+sdAcc.name+' jadi '+v+' (permanen)?')) return;
+  sdDo(()=>sdPost('/plan',{plan:v}),'Paket disimpan.');
+}
+function sdSaveTitle(){
+  const v=$('sd-title').value;
+  if(!confirm((v?'Pasang titel '+v:'Lepas titel')+' untuk '+sdAcc.name+'?')) return;
+  sdDo(()=>sdPost('/title',{roleBadge:v}),'Titel disimpan.');
+}
+function sdSaveProfile(){
+  sdDo(()=>sdPost('/profile',{name:$('sd-pname').value,email:$('sd-pmail').value}),'Profil disimpan.');
+}
+function sdResetPw(){
+  const pw=$('sd-pw').value;
+  if(pw.length<6||pw.length>72){ say('sd-msg','Password 6-72 karakter.'); return; }
+  if(!confirm('Reset password '+sdAcc.name+'? Semua perangkatnya akan keluar.')) return;
+  sdDo(()=>sdPost('/password',{password:pw}),'Password diganti. Kasih tahu user password barunya.');
+}
+function sdLogout(){
+  if(!confirm('Keluarkan '+sdAcc.name+' dari semua perangkat?')) return;
+  sdDo(()=>sdPost('/logout'),'Semua perangkat dikeluarkan.');
+}
+async function sdCreate(){
   try{
-    const d=await api('/api/admin/accounts/'+encodeURIComponent(sdAcc.id)+'/balance',{method:'POST',body:JSON.stringify({mode:kind==='set'?'set':'add',amount:kind==='sub'?-n:n,note:$('sd-note').value.trim()})});
-    sdPick(d.account); say('sd-msg','Saldo sekarang '+rp(d.account.balance)+'.',true); sdSearch();
+    const d=await api('/api/admin/accounts/create',{method:'POST',body:JSON.stringify({name:$('nc-name').value,email:$('nc-mail').value,password:$('nc-pw').value,plan:$('nc-plan').value,roleBadge:$('nc-title').value})});
+    say('sd-msg','Akun dibuat. Kasih tahu user email dan passwordnya.',true);
+    $('nc-name').value=''; $('nc-mail').value=''; $('nc-pw').value='';
+    await sdOpen(d.account.id);
   }catch(e){ say('sd-msg',e.message); }
 }
 
@@ -651,7 +816,7 @@ async function loadOrders(){
     $('olist').innerHTML=d.orders.map(o=>{
       const st=ST[o.status]||[o.status,'var(--soft)'];
       const open=!['paid','failed'].includes(o.status);
-      const detail=o.type==='deposit'?('Isi saldo: '+rp(o.amount)+' (transfer '+rp(o.price)+')'):o.type==='shop'?('Titel/Item: '+esc(o.itemName)):o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):o.type==='antimaling'?('AntiMaling: '+esc(o.deviceLabel)):('Ke: '+esc(o.phoneNumber));
+      const detail=o.type==='deposit'?(o.source==='redeem'?('Kode redeem '+esc(o.redeemCode)+': saldo '+rp(o.amount)):('Isi saldo: '+rp(o.amount)+' (transfer '+rp(o.price)+')')):o.type==='shop'?('Titel/Item: '+esc(o.itemName)):o.type==='premium'?('Paket: '+esc(o.plan)):o.type==='bot'?('Bot: '+esc(o.botName)+' · '+esc(o.durationDays)+' hari'):o.type==='antimaling'?('AntiMaling: '+esc(o.deviceLabel)):('Ke: '+esc(o.phoneNumber));
       return `<div class="card">
         <div class="top"><b>${esc(o.productLabel)}</b><span class="badge" style="background:${st[1]}">${st[0]}</span></div>
         <div class="small">${detail} · ${rp(o.price)}${o.paidWith==='saldo'?' · dibayar pakai saldo':''}</div>

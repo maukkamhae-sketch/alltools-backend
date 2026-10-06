@@ -656,7 +656,7 @@ app.get('/api/saldo', requireAuth, (req, res) => {
     .filter(o => o.type === 'deposit' || (o.paidWith === 'saldo' && o.status === 'paid'))
     .slice(0, 30)
     .map(o => o.type === 'deposit'
-      ? { orderId: o.orderId, kind: 'deposit', amount: o.amount, total: o.price, status: o.status, createdAt: o.createdAt }
+      ? { orderId: o.orderId, kind: 'deposit', label: o.source === 'redeem' ? 'Kode redeem ' + o.redeemCode : 'Isi saldo', amount: o.amount, total: o.price, status: o.status, createdAt: o.createdAt }
       : { orderId: o.orderId, kind: 'spend', amount: -o.price, label: o.productLabel, status: o.status, createdAt: o.createdAt });
   res.json({ balance: Number(req.user.balance) || 0, min: DEPOSIT_MIN, max: DEPOSIT_MAX, dana: getDanaNumber(), history });
 });
@@ -933,6 +933,39 @@ app.get('/api/admin/antimaling-devices', requireOwner, (req, res) => {
     };
   });
   res.json({ totalUsers: users.length, devices });
+});
+
+// Daftar semua user (tab "Data User"). Tanpa passwordHash. Dipakai untuk melihat, mencari, dan menyaring akun.
+app.get('/api/admin/users', requireOwner, (req, res) => {
+  const all = db.getAllUsers();
+  const q = String(req.query.q || '').trim().toLowerCase();
+  const plan = String(req.query.plan || '').trim().toLowerCase();
+  const titled = String(req.query.titled || '') === '1';
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+  const counts = { free: 0, basic: 0, pro: 0, owner: 0, titled: 0 };
+  for (const u of all) {
+    if (counts[u.plan] !== undefined) counts[u.plan]++;
+    if (u.roleBadge) counts.titled++;
+  }
+
+  const rows = all.filter(u => {
+    if (plan && u.plan !== plan) return false;
+    if (titled && !u.roleBadge) return false;
+    if (q) {
+      const hay = ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.id || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  rows.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const total = rows.length;
+  const users = rows.slice(offset, offset + limit).map(u => ({
+    id: u.id, name: u.name || '', email: u.email || '', plan: u.plan || 'free',
+    roleBadge: u.roleBadge || '', balance: Number(u.balance) || 0, createdAt: u.createdAt || '',
+  }));
+  res.json({ total, totalAll: all.length, counts, users, offset, limit });
 });
 
 app.get('/api/admin/config', requireOwner, (req, res) => {

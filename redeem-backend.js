@@ -1,6 +1,7 @@
 // Kode redeem AllTools.
 // - kind "discount": user klaim kode -> diskon otomatis terpakai di pembelian berikutnya
 // - kind "plan"    : user klaim kode -> paket (basic/pro) langsung aktif (PERMANEN)
+// - kind "balance" : user klaim kode -> saldo akun langsung bertambah (nominal dari Owner)
 // Data disimpan di db.getSettings().redeemCodes dan .redeemClaims (ikut volume /data).
 const fs = require('fs');
 const path = require('path');
@@ -31,6 +32,7 @@ function registerRedeem(app, { db, requireAuth, requireOwner }) {
 
   function describe(c) {
     if (c.kind === 'plan') return 'Paket ' + c.plan + ' gratis';
+    if (c.kind === 'balance') return 'Saldo ' + rupiah(c.amount);
     const parts = [c.percent ? c.percent + '%' : rupiah(c.amount)];
     if (c.percent && c.maxDiscount) parts.push('maks ' + rupiah(c.maxDiscount));
     return 'Diskon ' + parts.join(' ');
@@ -70,6 +72,25 @@ function registerRedeem(app, { db, requireAuth, requireOwner }) {
       c.uses = (c.uses || 0) + 1; c.usedBy = [...(c.usedBy || []), req.user.id];
       saveCodes(list);
       return res.json({ ok: true, kind: 'plan', message: 'Berhasil! Paket ' + c.plan + ' sudah aktif di akunmu.' });
+    }
+
+    if (c.kind === 'balance') {
+      const user = db.findUserById(req.user.id);
+      if (!user) return res.status(401).json({ error: 'Akun tidak ditemukan.' });
+      const amt = Math.floor(Number(c.amount) || 0);
+      if (!(amt > 0)) return res.status(400).json({ error: 'Kode ini tidak valid.' });
+      user.balance = (Number(user.balance) || 0) + amt;
+      db.saveUser(user);
+      c.uses = (c.uses || 0) + 1; c.usedBy = [...(c.usedBy || []), req.user.id];
+      saveCodes(list);
+      // catat sebagai riwayat saldo (tampil di halaman Saldo user dan tab Pesanan admin)
+      db.saveOrder({
+        orderId: 'REDEEM-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        userId: user.id, type: 'deposit', source: 'redeem', redeemCode: code,
+        productLabel: 'Kode redeem ' + code, amount: amt, price: amt, uniqueCode: 0,
+        status: 'paid', createdAt: new Date().toISOString(),
+      });
+      return res.json({ ok: true, kind: 'balance', balance: user.balance, message: 'Berhasil! Saldo ' + rupiah(amt) + ' sudah masuk ke akunmu. Saldo sekarang ' + rupiah(user.balance) + '.' });
     }
 
     // diskon: simpan sebagai klaim, dipakai otomatis saat beli
@@ -150,7 +171,7 @@ function registerRedeem(app, { db, requireAuth, requireOwner }) {
 
   app.post('/api/admin/redeem', requireOwner, (req, res) => {
     const b = req.body || {};
-    const kind = b.kind === 'plan' ? 'plan' : 'discount';
+    const kind = b.kind === 'plan' ? 'plan' : b.kind === 'balance' ? 'balance' : 'discount';
     const list = codes();
     let code = norm(b.code);
     if (code) {
@@ -168,7 +189,13 @@ function registerRedeem(app, { db, requireAuth, requireOwner }) {
       if (isNaN(t.getTime())) return res.status(400).json({ error: 'Tanggal kedaluwarsa tidak valid.' });
       item.expiresAt = t.toISOString();
     }
-    if (kind === 'plan') {
+    if (kind === 'balance') {
+      const amount = Math.floor(Number(b.amount) || 0);
+      if (amount < 1000 || amount > 1000000) return res.status(400).json({ error: 'Nominal saldo Rp 1.000 sampai Rp 1.000.000.' });
+      // Kode saldo = uang sungguhan, jadi wajib dibatasi jumlah klaimnya.
+      if (!(item.maxUses > 0)) return res.status(400).json({ error: 'Kode saldo wajib punya kuota klaim (minimal 1), jangan 0.' });
+      item.amount = amount;
+    } else if (kind === 'plan') {
       if (!['basic', 'pro'].includes(b.plan)) return res.status(400).json({ error: 'Pilih paket basic atau pro.' });
       item.plan = b.plan;
     } else {
