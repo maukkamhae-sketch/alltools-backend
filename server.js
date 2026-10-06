@@ -1215,6 +1215,30 @@ app.post('/api/antimaling/devices/blocked-apps', requireAuth, (req, res) => {
   res.json({ ok: true, blockedApps: dev.blockedApps });
 });
 
+// ----- fitur "Screen Time" (Parental Control) -----
+// Dipanggil dari apk (GuardService), pakai X-Api-Key. Body: { date:'YYYY-MM-DD', usage: {pkg: ms, ...} }
+app.post('/api/antimaling/device/screentime', rateLimit(60), (req, res) => {
+  const dev = findAmByApiKey(req);
+  if (!dev) return res.status(401).json({ error: 'apiKey tidak valid.' });
+  const { date, usage } = req.body || {};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return res.status(400).json({ error: 'Tanggal tidak valid.' });
+  if (!usage || typeof usage !== 'object' || Array.isArray(usage)) return res.status(400).json({ error: 'usage harus object {paket: milidetik}.' });
+  const clean = {};
+  for (const [pkg, ms] of Object.entries(usage)) {
+    if (typeof pkg === 'string' && pkg.length <= 200 && Number.isFinite(ms) && ms >= 0 && ms < 24 * 3600 * 1000) clean[pkg] = Math.round(ms);
+  }
+  db.saveAmScreenTime(dev.id, date, clean);
+  res.json({ ok: true });
+});
+
+// Dipanggil dari dashboard (butuh login). ?deviceId=...&days=7
+app.get('/api/antimaling/screentime', requireAuth, (req, res) => {
+  const dev = db.findAmDeviceById(req.query.deviceId);
+  if (!dev || dev.userId !== req.user.id) return res.status(404).json({ error: 'Device tidak ditemukan.' });
+  const days = Math.min(30, Math.max(1, parseInt(req.query.days, 10) || 7));
+  res.json({ days: db.getAmScreenTimeForDevice(dev.id, days) });
+});
+
 /* ---------------------------------------------------------- */
 /* Downloader: contoh pemakaian yt-dlp untuk ambil link video   */
 /* tanpa watermark. yt-dlp harus terinstal di server (bukan npm,*/

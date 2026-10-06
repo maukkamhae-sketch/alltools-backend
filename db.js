@@ -10,7 +10,7 @@ const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DB_FILE = path.join(DATA_DIR, 'data.json');
 
 function emptyDb() {
-  return { users: [], history: [], sites: [], bots: [], settings: {}, transactions: [], orders: [], amDevices: [], amCommands: [], amLocations: [] };
+  return { users: [], history: [], sites: [], bots: [], settings: {}, transactions: [], orders: [], amDevices: [], amCommands: [], amLocations: [], amScreenTime: [] };
 }
 
 function readDb() {
@@ -266,6 +266,30 @@ function getAllUsers() {
 }
 function getAllAmDevices() {
   return readDb().amDevices;
+}
+
+/* ---------- Screen Time (Parental Control) ---------- */
+// Satu entri per device per tanggal (YYYY-MM-DD), isi { pkg: ms } akumulasi hari itu.
+function saveAmScreenTime(deviceId, date, usageByPkg) {
+  const db = readDb();
+  if (!Array.isArray(db.amScreenTime)) db.amScreenTime = [];
+  const idx = db.amScreenTime.findIndex(s => s.deviceId === deviceId && s.date === date);
+  const entry = { deviceId, date, usage: usageByPkg, updatedAt: new Date().toISOString() };
+  if (idx === -1) db.amScreenTime.push(entry);
+  else db.amScreenTime[idx] = entry;
+  // batasi riwayat: simpan maks 30 hari terakhir per device
+  const forDevice = db.amScreenTime.filter(s => s.deviceId === deviceId).sort((a, b) => a.date < b.date ? 1 : -1);
+  if (forDevice.length > 30) {
+    const keepDates = new Set(forDevice.slice(0, 30).map(s => s.date));
+    db.amScreenTime = db.amScreenTime.filter(s => s.deviceId !== deviceId || keepDates.has(s.date));
+  }
+  writeDb(db);
+  return entry;
+}
+function getAmScreenTimeForDevice(deviceId, days) {
+  const db = readDb();
+  const list = Array.isArray(db.amScreenTime) ? db.amScreenTime : [];
+  return list.filter(s => s.deviceId === deviceId).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, days || 7);
 }
 
 module.exports = {
